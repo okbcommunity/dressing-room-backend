@@ -1,0 +1,437 @@
+openapi: 3.0.3
+info:
+  title: dressing-room-backend
+  description: |
+    This document describes the individual API services of the dressing-room-backend both functionally and technically.
+  contact:
+    name: Okay Bear Community
+  version: 1.0.0
+  
+servers:
+  - url: https://api.dressingroom.okbcommunity.com/
+    description: Dressing-Room-Backend (PROD)
+  - url: https://api.dressingroom.dev.okbcommunity.com/
+    description: Dressing-Room-Backend Interface (DEV)
+    
+tags:
+  - name: categories
+    description: Everyting related to Categories.
+  - name: traits
+    description: Everyting related to Traits.
+  - name: bears
+    description: Everyting related to Bears.
+    
+paths:
+
+  /v1/categories/{categoryId}:
+    get:
+      tags:
+        - categories
+      description: Queries the Dressing-Category at the provided ID.
+      operationId: getCategoryById
+      parameters:
+        - name: categoryId
+          in: path
+          description: The id of a category
+          required: true
+          schema:
+            $ref: '#/components/schemas/CategoryId'
+      responses:
+        '200':
+          description: Returns a json object containing all information about the requested Category.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Category'
+        '404':
+          description: Category not found.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+        '500':
+          description: Unknown server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+                
+  /v1/categories:
+    get:
+      tags:
+        - categories
+      description: Queries all existing Dressing-Categories.
+      operationId: getCategories
+      responses:
+        '200':
+          description: Returns an array containing all existing Categories.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Categories'
+        '500':
+          description: Unknown server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+                
+  /v1/traits/{traitId}:
+    get:
+      tags:
+        - traits
+      description: Queries the Dressing-Trait at the provided ID.
+      operationId: getTraitById
+      parameters:
+        - name: traitId
+          in: path
+          description: The id of a Trait
+          required: true
+          schema:
+            $ref: '#/components/schemas/TraitId'
+      responses:
+        '200':
+          description: Returns a json object containing all information about the requested Trait.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Trait'
+        '404':
+          description: Trait not found.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+        '500':
+          description: Unknown server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+                
+  /v1/traits:
+    get:
+      tags:
+        - traits
+      description: Queries all existing Dressing-Traits.
+      operationId: getTraits
+      responses:
+        '200':
+          description: Returns an array containing all existing Traits.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Traits'
+        '500':
+          description: Unknown server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+    post:
+      tags:
+        - traits
+      description: todo
+      operationId: createTrait
+      parameters:
+        - name: REQUEST_ID
+          description: ID to idenntify a request.
+          in: header
+          required: true
+          schema:
+            type: string
+      requestBody:
+        content:
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/TraitUploadRequest'
+      responses:
+        '200':
+          description: Trait has been registered and will be checked by the Team.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TraitUploadResponse'
+        '500':
+          description: Unknown server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+                
+  /v1/traits/{categoryId}/category:
+    get:
+      tags:
+        - traits
+      description: Queries the Dressing-Trait belonging to a Category.
+      operationId: getTraitByCategoryId
+      parameters:
+        - name: categoryId
+          in: path
+          description: The CategoryId the Trait belongs to.
+          required: true
+          schema:
+            $ref: '#/components/schemas/CategoryId'
+      responses:
+        '200':
+          description: Returns an array containing all Traits belonging to the Category.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Traits'
+        '404':
+          description: Category not found.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+        '500':
+          description: Unknown server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+                
+  /v1/bears/{bearId}:
+    get:
+      tags:
+        - bears
+      description: Queries the Bear at the provided ID. The ID is at the same time the public key of the corresponding NFT.
+      operationId: getBearById
+      parameters:
+        - name: bearId
+          in: path
+          description: The id of a Bear
+          required: true
+          schema:
+            $ref: '#/components/schemas/BearId'
+      responses:
+        '200':
+          description: Returns a json object containing all information about the requested Bear.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Bear'
+        '404':
+          description: Bear not found.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+        '500':
+          description: Unknown server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+                
+  /v1/bears/{numberId}:
+    get:
+      tags:
+        - bears
+      description: Queries the Bear at the provided Bear Number.
+      operationId: getBearByNumberId
+      parameters:
+        - name: numberId
+          in: path
+          description: The number of a Bear (e.g. 7227)
+          required: true
+          schema:
+            type: number
+      responses:
+        '200':
+          description: Returns a json object containing all information about the requested Bear.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Bear'
+        '404':
+          description: Bear not found.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+        '500':
+          description: Unknown server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+                
+components:
+  schemas:
+  
+    CategoryId:
+      type: string
+      format: uuid
+      description: Unique ID to identify a Category.
+      
+    TraitId:
+      type: string
+      format: uuid
+      description: Unique ID to identify a Trait.
+      
+    BearId:
+      type: string
+      format: uuid
+      description: Unique ID to identify an Okay Bear. This id is equal to the public key of the Bear NFT.
+      
+    Category:
+      type: object
+      required:
+        - id
+        - name
+        - weight
+      properties:
+        id:
+          $ref: '#/components/schemas/CategoryId'
+        name:
+          type: string
+          description: Category name
+          example: fur
+        dispaly_name_en:
+          type: string
+          description: Category name in English
+          example: Fur
+        weight:
+          type: number
+          description: Category weight determines at what layer the category is added to the combined image.
+          example: 3
+      description: A Category
+      
+    Categories:
+      type: array
+      items:
+        $ref: '#/components/schemas/Category'
+      description: Multipe Categories
+      
+    Trait: 
+      type: object
+      required:
+        - id
+        - name
+        - category_id
+        - images
+      properties:
+        id:
+          $ref: '#/components/schemas/TraitId'
+        name:
+          type: string
+          description: Trait name
+          example: yellow_background
+        dispaly_name_en:
+          type: string
+          description: Trait name in English
+          example: Yellow Background
+        category_id:
+          $ref: '#/components/schemas/CategoryId'
+        images:
+          type: object
+          description: Images represeting the Trait in different resolutions and fromats.
+          properties:
+            image_5000x5000_png_url:
+              type: string
+              example: https://raw.githubusercontent.com/okbcommunity/dressing-room-assets/master/3fa85f64-5717-4562-b3fc-2c963f66afa6.png
+            image_512x512_png_url:
+              type: string
+              example: https://raw.githubusercontent.com/okbcommunity/dressing-room-assets/master/3fa85f64-5717-4562-b3fc-2c963f66afa6.png
+            image_webp_url:
+              type: string
+              example: https://raw.githubusercontent.com/okbcommunity/dressing-room-assets/master/3fa85f64-5717-4562-b3fc-2c963f66afa6.webp
+      description: A Trait
+              
+    Traits:
+      type: array
+      items:
+        $ref: '#/components/schemas/Trait'
+      description: Multipe Traits
+      
+    Bear:
+      type: object
+      required:
+        - id
+      properties:
+        id:
+          $ref: '#/components/schemas/BearId'
+        name:
+          type: string
+          description: Bear name
+          example: OkayBears#7227
+        number:
+          type: number
+          description: Bear number in the Collection
+          example: 7227
+        traits:
+          type: array
+          items:
+            $ref: '#/components/schemas/Trait'
+      description: A Bear
+            
+    TraitUploadRequest:
+      type: object
+      required:
+        - image
+      properties:
+        image:
+          type: string
+          format: binary
+          minLength: 10
+          description: Image of the to submit Trait.
+        submitter:
+          $ref: '#/components/schemas/TraitUploadSubmitter'
+            
+    TraitUploadSubmitter:
+      description: Some information about the Person who submitted the Trait. To credit her/him later.
+      type: object
+      properties:
+        name:
+          type: string
+          description: Name of the Submitter
+          example: BennoDev
+        twitter:
+          type: string
+          description: Twitter handle of the Submitter
+          example: bennodev19
+        discord:
+          type: string
+          description: Discord handle of the Submitter
+          example: bennodev#1234
+           
+    TraitUploadResponse:
+      type: object
+      required:
+        - success
+        - ticket_id
+        - ticket_url
+      properties:
+        success:
+          type: boolean
+          description: Whether the Trait was successful submitted.
+          example: true
+        ticket_id:
+          type: string
+          format: uuid
+          description: Unique ID to identify a TraitUploadTicket.
+        ticket_url:
+          type: string
+          description: URL pointing to the opned ticket which will be processed by the Team.
+          example: https://github.com/okbcommunity/dreessing-room-cms/issues/221
+        
+    ApiError:
+      required:
+        - error
+      type: object
+      properties:
+        error:
+          type: string
+          description: Short description of error message or error code
+        error_description:
+          type: string
+          description: Long description of error message
+        request_id:
+          type: string
+          description: ID of the original request
+        error_uri:
+          type: string
+          description: URI to detailed error description
+      description: An Api Error
