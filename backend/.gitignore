@@ -1,9 +1,11 @@
 # Deps
 node_modules
 
-# Cache
+# Build + Cache
 .cache
+dist
 
 # Misc
+.env.local
 .env
 .idea

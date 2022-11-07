@@ -131,7 +131,7 @@ paths:
     post:
       tags:
         - traits
-      description: todo
+      description: Add new Trait.
       operationId: createTrait
       parameters:
         - name: REQUEST_ID
@@ -377,9 +377,22 @@ components:
           format: binary
           minLength: 10
           description: Image of the to submit Trait.
+        trait: 
+          $ref: '#/components/schemas/TraitUploadTraitInfo'
         submitter:
           $ref: '#/components/schemas/TraitUploadSubmitter'
-            
+
+    TraitUploadTraitInfo:
+      description: Some information about the uploaded Trait.
+      type: object
+      properties:
+        name: 
+          type: string
+          description: Name of the Trait
+          example: yellow_background
+        category_id:
+          $ref: '#/components/schemas/CategoryId'
+
     TraitUploadSubmitter:
       description: Some information about the Person who submitted the Trait. To credit her/him later.
       type: object
