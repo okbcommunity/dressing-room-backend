@@ -55,16 +55,20 @@ For easier sorting and adding new categories. Since if a new category is added e
 
 In term of management; we’ll need a CMS that permits us to easily add/remove and edit the tags of a trait.
 
+![img](./resources/assets/aktivity_diagram_cms.drawio.png)
+
 ---
 
 ## 🧐 FAQ
 
-### Why we've decided to use GraphQL over REST for this project?
+### Why we've decided to use GraphQL and REST combination?
 
 1. **Client-side data shaping + Navigating a relational Graph**
    _e.g. Frontend can decide whehter it only requires the Trait ID's of a Bear or all Trait Information already baked into the Response -> only one request instead of potential 2 as we would only return the Trait ID's via the REST API; Easier support for multipe display languages -> Frontend can decide what language the display name of a Trait should be_
 
 2. **Auto documentation + Types for the Backend and Frontend.** Wouldn't be a problem with REST either if we could've figured out how to generate Backend Types (Typescript) based on the created `Open API` file. In Spring Boot its easy but we decided to go with NodeJs + Express for simplicity as the majority devs knows how to write Typescript and can work on frontend and backend.
+
+3. **Using REST for POST requests** GraphQL is an awesome to dynamically query data but not really built around POST requests. For example sending formadata (what we need to send binary data) seems like to be easier with REST.
 
 **Ressources:**
 
