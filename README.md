@@ -57,6 +57,14 @@ In term of management; we’ll need a CMS that permits us to easily add/remove a
 
 ![img](./resources/assets/aktivity_diagram_cms.drawio.png)
 
+### Why Github?
+GitHub is a hosting service for software development and version control using Git. However, temporary, it can be 'misused' as Content Management System (CMS) for the first iteration of this (POC) backend. A central part of the GitHub are `Pull Requests` and `Issues`. Both of these functionalities come into play in the CMS.
+
+- `Pull Requests` let you tell others about changes you've pushed to a branch in a repository on GitHub. This functionality can be used for the Trait image submission process. As soon as a user submits a new Trait, a `Pull Request` is opened by the backend ([Github App](https://docs.github.com/en/developers/apps/getting-started-with-apps/about-apps)) and an admin can check whether the suggested changes (the newly added image and chosen Category) are appropriate. If the Trait corresponds with the Guidelines, the `Pull Request` can be merged and the changes get applied by the backend. If the Trait doesn't fit, an admin can update/correct the provided changes or close the `Pull Request`.  If the `Pull Request` is closed, the changes won't get applied.
+- `Issues` let you track your work on GitHub and can be seen as tasks. Issues are like Task Items a developer has to resolve. Thus, an Issue can be used to trigger some activity in the backend and not the developer has to resolve the task but the backend. For example, an admin creates a new `Issue` with the Tag `add_category` and specifies based on a predefined template the new Category. As soon as the Issue is submitted (e.g. via Tag `apply`) the backend can read the specified information from the Issue and can make the defined changes happen.
+
+By using Github we avoid implementing a custom authentication system as a Github Repository as integrated authentisation and admins can be gratned the required rights.
+
 ---
 
 ## 🧐 FAQ
