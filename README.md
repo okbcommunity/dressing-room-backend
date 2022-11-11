@@ -65,6 +65,13 @@ GitHub is a hosting service for software development and version control using G
 
 By using Github we avoid implementing a custom authentication system as a Github Repository as integrated authentisation and admins can be gratned the required rights.
 
+### Get Started
+- [Blog Post](https://medium.com/@knidarkness/creating-a-github-app-with-node-js-3bda731d45b9)
+
+### Test Github Webhook locally
+- [Gist](https://gist.github.com/joyrexus/7898e57be3478b4522ec5654c3cb572e)
+- [Seem.io](https://smee.io/)
+
 ---
 
 ## 🧐 FAQ
