@@ -10,9 +10,22 @@ todo
 
 ---
 
+### Modules
+- `backend` - The backend where the code lives.
+- `devops` - All relevent files for deployment and running the App on a server.
+- `docs` - Some documentation.
+- `resources` - Files that are relevant for documentation purpose.
+
+---
+
 ## 🛠 Local Development
 
 todo
+
+### Enironment Variables
+
+PRIVATE_KEY
+Download `.pem` file from Github open it in your Code Editor and [replace all 'newlines' with `\n`](https://unix.stackexchange.com/questions/572207/vim-how-to-replace-a-newline-with-the-string-n)
 
 ---
 
@@ -89,3 +102,6 @@ By using Github we avoid implementing a custom authentication system as a Github
 
 - [Video](https://www.youtube.com/watch?v=x6r4IzofPVc)
 - [Blog](https://hygraph.com/blog/graphql-vs-rest-apis)
+
+### No line break after a header in markdown?
+- [Github Issue](https://github.com/prettier/prettier/issues/6491)

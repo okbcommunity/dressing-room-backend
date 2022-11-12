@@ -1,33 +1,34 @@
 # Backend
-> The actual backend.
 
+> The actual backend
 
-## temp
-### Github App
-- [Creation Docs](https://docs.github.com/en/developers/apps/building-github-apps/creating-a-github-app)
+## 🧐 FAQ
 
-## 🧐 TODO
-todo
+### How was the `backend` setup?
+
+The project was setup from scratch using the follwoing commands:
+
+```bash
+> pnpm init
+> npx tsc --init
+```
+
+We've worked on it from there and added additional required deps.
 
 ---
 
 ## 🔴 Issues
+
 todo
 
 ---
 
 ## 👨‍🏫 Learnings
 
-todo
+### Github App
 
----
-
-## 🧐 FAQ
-
-### How was the project setup?
-The project was setup from scratch using the follwoing commands:
-```bash
-> pnpm init
-> npx tsc --init
-```
-We've worked on it from there and added additional required deps.
+Github Apps can act on them self (like a independent user), where OAuth Apps
+only proivde authentication (e.g. to your User Account). Thus OAuth Apps will
+create e.g. Comments in your behalf with your Github Profile. Github Apps on the
+other hand have an own profile (e.g. JeffBot) and act on them self while they
+can create e.g. Comments in their name.
