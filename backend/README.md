@@ -32,3 +32,7 @@ only proivde authentication (e.g. to your User Account). Thus OAuth Apps will
 create e.g. Comments in your behalf with your Github Profile. Github Apps on the
 other hand have an own profile (e.g. JeffBot) and act on them self while they
 can create e.g. Comments in their name.
+
+### No line break after a header in markdown?
+
+- [Github Issue](https://github.com/prettier/prettier/issues/6491)

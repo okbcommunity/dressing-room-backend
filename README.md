@@ -66,17 +66,19 @@ For easier sorting and adding new categories. Since if a new category is added e
 
 ## Content Management System (CMS)
 
-In term of management; we’ll need a CMS that permits us to easily add/remove and edit the tags of a trait.
+In term of management, we’ll need a CMS that permits us to easily add/remove and edit Traits.
+Also do we want to have the option to approve from community members submitted traits before adding them to the Dressing Room.
 
 ![img](./resources/assets/aktivity_diagram_cms.drawio.png)
 
-### Why Github?
+### Why Github as CMS?
 GitHub is a hosting service for software development and version control using Git. However, temporary, it can be 'misused' as Content Management System (CMS) for the first iteration of this (POC) backend. A central part of the GitHub are `Pull Requests` and `Issues`. Both of these functionalities come into play in the CMS.
 
 - `Pull Requests` let you tell others about changes you've pushed to a branch in a repository on GitHub. This functionality can be used for the Trait image submission process. As soon as a user submits a new Trait, a `Pull Request` is opened by the backend ([Github App](https://docs.github.com/en/developers/apps/getting-started-with-apps/about-apps)) and an admin can check whether the suggested changes (the newly added image and chosen Category) are appropriate. If the Trait corresponds with the Guidelines, the `Pull Request` can be merged and the changes get applied by the backend. If the Trait doesn't fit, an admin can update/correct the provided changes or close the `Pull Request`.  If the `Pull Request` is closed, the changes won't get applied.
-- `Issues` let you track your work on GitHub and can be seen as tasks. Issues are like Task Items a developer has to resolve. Thus, an Issue can be used to trigger some activity in the backend and not the developer has to resolve the task but the backend. For example, an admin creates a new `Issue` with the Tag `add_category` and specifies based on a predefined template the new Category. As soon as the Issue is submitted (e.g. via Tag `apply`) the backend can read the specified information from the Issue and can make the defined changes happen.
+- `Issues` let you track your work on GitHub and can be seen as tasks. Issues are like Task Items a developer has to resolve. Thus, an Issue can be used to define tasks for the backend and not the developer has to resolve the task but the backend. For example, an admin creates a new `Issue` with the Tag `add_category` and defines based on a predefined template the new Category. As soon as the Issue is submitted (e.g. via Tag `apply`) the backend reads the specified information from the Issue and implements these changes.
 
-By using Github we avoid implementing a custom authentication system as a Github Repository as integrated authentisation and admins can be gratned the required rights.
+By using Github we avoid implementing a custom authentication system as a Github Repository has integrated authentisation and admins can be granted the required managment rights.
+In the future we might design and build a custom CMS platform that purley serves the purpose of managing the Trait content.
 
 ### Get Started
 - [Blog Post](https://medium.com/@knidarkness/creating-a-github-app-with-node-js-3bda731d45b9)
@@ -84,6 +86,14 @@ By using Github we avoid implementing a custom authentication system as a Github
 ### Test Github Webhook locally
 - [Gist](https://gist.github.com/joyrexus/7898e57be3478b4522ec5654c3cb572e)
 - [Seem.io](https://smee.io/)
+
+---
+
+## Image Hosting
+
+The Trait assets need to be hosted somewhere,
+where the frontend and backend can easily access them via a URL.
+
 
 ---
 
@@ -96,12 +106,9 @@ By using Github we avoid implementing a custom authentication system as a Github
 
 2. **Auto documentation + Types for the Backend and Frontend.** Wouldn't be a problem with REST either if we could've figured out how to generate Backend Types (Typescript) based on the created `Open API` file. In Spring Boot its easy but we decided to go with NodeJs + Express for simplicity as the majority devs knows how to write Typescript and can work on frontend and backend.
 
-3. **Using REST for POST requests** GraphQL is an awesome to dynamically query data but not really built around POST requests. For example sending formadata (what we need to send binary data) seems like to be easier with REST.
+3. **Using REST for POST requests** GraphQL is an awesome to dynamically query data but not really built around POST requests. For example sending formadata (for sending binary data) seems like to be easier with REST.
 
 **Ressources:**
 
 - [Video](https://www.youtube.com/watch?v=x6r4IzofPVc)
 - [Blog](https://hygraph.com/blog/graphql-vs-rest-apis)
-
-### No line break after a header in markdown?
-- [Github Issue](https://github.com/prettier/prettier/issues/6491)
