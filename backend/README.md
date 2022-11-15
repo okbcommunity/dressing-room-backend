@@ -36,3 +36,7 @@ can create e.g. Comments in their name.
 ### No line break after a header in markdown?
 
 - [Github Issue](https://github.com/prettier/prettier/issues/6491)
+
+### Determine project root from a running node.js application
+
+- [Stackoverflow](https://stackoverflow.com/questions/10265798/determine-project-root-from-a-running-node-js-application)

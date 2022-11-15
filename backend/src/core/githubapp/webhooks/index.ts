@@ -1,8 +1,9 @@
 import { uploadFileTest } from '../actions';
 import githubApp from '../app';
 
-githubApp.webhooks.onError(() => {
+githubApp.webhooks.onError((event) => {
   // TODO handle Github Webhook Error
+  console.log('Github Webhook Error', { event });
 });
 
 githubApp.webhooks.on('issues.opened', async ({ octokit, payload }) => {

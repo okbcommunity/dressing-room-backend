@@ -12,7 +12,7 @@ export default {
     clientId: appClientId,
     webhookSecret: appWebhookSecret,
     name: 'okb-community-app',
-    privateKey: appPrivateKey.replace(/\\n/gm, '\n'),
+    privateKey: appPrivateKey.replace(/\\n/gm, '\n'), // https://github.com/octokit/app.js/issues/262
   },
 
   // API
