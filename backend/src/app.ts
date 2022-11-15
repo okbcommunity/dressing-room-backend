@@ -5,6 +5,7 @@ import cors from 'cors';
 import config from './config';
 import createHttpError from 'http-errors';
 import routes from './routes';
+import bodyParser from 'body-parser';
 
 // Init Express App
 const { app } = (() => {
@@ -23,6 +24,9 @@ const { app } = (() => {
       credentials: true, // Access-Control-Allow-Credentials
     })
   );
+
+  // Parse JSON Body
+  app.use(bodyParser.json());
 
   app.use('/', routes);
 

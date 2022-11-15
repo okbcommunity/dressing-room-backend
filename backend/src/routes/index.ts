@@ -4,9 +4,8 @@ import v1Routes from './v1';
 
 const router = express.Router();
 
-router.unsubscribe('/v1', v1Routes);
+router.use('/v1', v1Routes);
 router.use('/info', (req, res) => {
-  console.log('Info');
   try {
     res.send({
       version: config.app.packageVersion,

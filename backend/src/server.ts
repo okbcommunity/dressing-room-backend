@@ -1,6 +1,6 @@
 import { createServer as createHttpServer } from 'http';
 import app from './app';
-import config from './config';
+import config, { STAGE } from './config';
 import { setupGithubWebhookDevRedirect } from './core/githubapp';
 
 export const { httpServer } = (() => {
@@ -29,7 +29,7 @@ export const { httpServer } = (() => {
 
   // Setup Github Dev Webhook to redirect Github events to the localhost interface
   let closeGithubWebhookDevRedirect = () => {};
-  if (process.env.NODE_ENV === 'development') {
+  if (config.app.stage === STAGE.LOCAL) {
     closeGithubWebhookDevRedirect = setupGithubWebhookDevRedirect();
   }
 

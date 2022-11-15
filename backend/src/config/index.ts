@@ -1,8 +1,9 @@
 import dotenv from 'dotenv';
+import { STAGE } from './types';
 
 // Load environment variables based on Stage
 // https://stackoverflow.com/questions/11104028/why-is-process-env-node-env-undefined
-const ENVIRONMENT = process.env.NODE_ENV ?? 'dev';
+const ENVIRONMENT = process.env.NODE_ENV ?? STAGE.LOCAL;
 dotenv.config({ path: `.env.${ENVIRONMENT}` });
 
 // Import Configs
@@ -17,3 +18,5 @@ export const config = {
 console.log(`Loaded Config based on '.env.${ENVIRONMENT}'`, { config });
 
 export default config;
+
+export * from './types';

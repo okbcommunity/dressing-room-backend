@@ -3,6 +3,6 @@ import { githubWebhookController } from './github.controller';
 
 const router = Router();
 
-router.get('/events', githubWebhookController);
+router.post('/events', githubWebhookController);
 
 export default router;

@@ -22,20 +22,32 @@ export async function githubWebhookController(req: Request, res: Response) {
     if (
       typeof githubDelivery === 'string' &&
       typeof githubEventName === 'string' &&
-      typeof githubSignature === 'string'
+      typeof githubSignature === 'string' &&
+      req.body != null
     ) {
+      // TODO REMOVE
+      console.log('verifyAndReceive', {
+        id: githubDelivery,
+        name: (req.body.action != null
+          ? `${githubEventName}.${req.body.action}`
+          : githubEventName) as any,
+      });
+
+      // https://github.com/octokit/webhooks.js/#webhooksverifyandreceive
       await githubApp.webhooks.verifyAndReceive({
         id: githubDelivery,
-        name: githubEventName as any,
+        name: (req.body.action != null
+          ? `${githubEventName}.${req.body.action}`
+          : githubEventName) as any,
         signature: githubSignature,
-        payload: JSON.parse(req.body),
+        payload: req.body,
       });
     }
 
     res.sendStatus(200);
   } catch (err) {
     // TODO proper error handling
-    console.log(err);
+    console.error(err);
     githubApp.log.error(err as string);
     res.sendStatus(500);
   }
