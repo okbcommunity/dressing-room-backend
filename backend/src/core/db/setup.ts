@@ -12,8 +12,10 @@ export const { closeDB, connectDB, db } = (() => {
   }
 
   async function closeDB() {
-    await PrismaClient.$disconnect();
-    console.log('Successfully closed the connection to the database.');
+    if (db != null) {
+      await db.$disconnect();
+      console.log('Successfully closed the connection to the database.');
+    }
   }
 
   return { closeDB, connectDB, db: db ?? connectDB() };
