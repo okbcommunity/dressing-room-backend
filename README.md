@@ -129,3 +129,4 @@ We will built the backend plugin and play and have an `Image Upload Handler` so 
 
 - [Video](https://www.youtube.com/watch?v=x6r4IzofPVc)
 - [Blog](https://hygraph.com/blog/graphql-vs-rest-apis)
+- [File uploads with GraphQL and apollo](https://medium.com/@danielbuechele/file-uploads-with-graphql-and-apollo-5502bbf3941e)
