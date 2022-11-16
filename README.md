@@ -94,6 +94,7 @@ as its easy to setup and integrates with our `CMS` system.
 ### Size limit of Github Repo
 The [max file size is `100MB`](https://docs.github.com/en/repositories/working-with-files/managing-large-files/about-large-files-on-github#file-size-limits) and [the max repo size is 5GB](https://docs.github.com/en/repositories/working-with-files/managing-large-files/about-large-files-on-github#repository-size-limits). The only limiting facctor might be the **max repo size** as its not scalable. However it should be enough for now. If we assume each trait with the differen scaling factors requires `2MB` we could store `2500` Traits. The base Okay Bear collection [has `171` Traits](https://raritysniper.com/okay-bears/traits).
 
+**Ressources**
 - [Stackoverflow](https://stackoverflow.com/questions/23843721/can-github-be-used-for-hosting-files-mp3-and-images)
 - [Git Large File Storage](https://git-lfs.github.com/)
 - [Git Sizer](https://github.com/github/git-sizer)

@@ -6,8 +6,27 @@
 
 ### Enironment Variables
 
-PRIVATE_KEY Download `.pem` file from Github open it in your Code Editor and
-[replace all 'newlines' with `\n`](https://unix.stackexchange.com/questions/572207/vim-how-to-replace-a-newline-with-the-string-n)
+```
+# Express App Server Details
+APP_PORT=9000
+APP_BASE_URL=http://localhost:{}
+APP_CORS_ORIGIN=http://localhost:3000
+
+# Github
+GITHUB_APP_ID=260964
+GITHUB_APP_WEBHOOK_SECRET="development"
+GITHUB_APP_PRIVATE_KEY={private_key}
+
+# Database
+DATABASE_URL="postgresql://postgres:postgres@localhost:5001/dressing_room?schema=public"
+```
+
+#### `PRIVATE_KEY `
+
+Download `.pem` file from Github and open it in your Code Editor.
+[Replace all 'newlines' with `\n`](https://unix.stackexchange.com/questions/572207/vim-how-to-replace-a-newline-with-the-string-n).
+Copy the String and replace `{private_key}` with the downloaded and parsed
+Private Key.
 
 ---
 
@@ -67,3 +86,14 @@ can create e.g. Comments in their name.
 ### Determine project root from a running node.js application
 
 - [Stackoverflow](https://stackoverflow.com/questions/10265798/determine-project-root-from-a-running-node-js-application)
+
+### Prisma
+
+- [How to Build a REST API with Prisma and PostgreSQL](https://www.digitalocean.com/community/tutorials/how-to-build-a-rest-api-with-prisma-and-postgresql)
+
+### Docker
+
+#### Commands
+
+- [`docker ps` - List Containers](https://docs.docker.com/engine/reference/commandline/ps/)
+- [`docker stop {container_name}` - Stop one or more running containers](https://docs.docker.com/engine/reference/commandline/stop/)

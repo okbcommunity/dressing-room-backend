@@ -13,10 +13,6 @@ const githubApp = new App({
     secret: githubConfig.app.webhookSecret,
   },
   Octokit: CustomOctokit,
-  oauth: {
-    clientId: githubConfig.app.clientId,
-    clientSecret: githubConfig.app.clientSecret,
-  },
 });
 
 export function getInstallationOctokit() {

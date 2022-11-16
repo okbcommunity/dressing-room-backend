@@ -1,10 +1,8 @@
 import dotenv from 'dotenv';
-import { STAGE } from './types';
 
 // Load environment variables based on Stage
 // https://stackoverflow.com/questions/11104028/why-is-process-env-node-env-undefined
-const ENVIRONMENT = process.env.NODE_ENV ?? STAGE.LOCAL;
-dotenv.config({ path: `.env.${ENVIRONMENT}` });
+dotenv.config({ path: `.env` });
 
 // Import Configs
 import appConfig from './app.config';
@@ -15,7 +13,7 @@ export const config = {
   github: githubConfig,
 };
 
-console.log(`Loaded Config based on '.env.${ENVIRONMENT}'`, { config });
+console.log(`Loaded Config based on '.env'`, { config });
 
 export default config;
 
