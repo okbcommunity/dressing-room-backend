@@ -6,7 +6,7 @@ This is the backend project for the `Dressing Room` project.
 
 #### 🕐 Time spent building this project
 
-todo
+[![wakatime](https://wakatime.com/badge/user/aa5a8ce7-1c57-4f26-a159-ea57ec5ea7c1/project/efa8fba4-233b-4312-8010-2ed84ba018d9.svg)](https://wakatime.com/badge/user/aa5a8ce7-1c57-4f26-a159-ea57ec5ea7c1/project/efa8fba4-233b-4312-8010-2ed84ba018d9)
 
 ---
 
