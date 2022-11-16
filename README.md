@@ -13,8 +13,8 @@ todo
 ### Modules
 - `backend` - The backend where the code lives.
 - `devops` - All relevent files for deployment and running the App on a server.
-- `docs` - Some documentation.
-- `resources` - Files that are relevant for documentation purpose.
+- `docs` - Some documentation. (wip)
+- `resources` - Files that are relevant for documentation purpose and planning.
 
 ---
 
@@ -22,10 +22,6 @@ todo
 
 todo
 
-### Enironment Variables
-
-PRIVATE_KEY
-Download `.pem` file from Github open it in your Code Editor and [replace all 'newlines' with `\n`](https://unix.stackexchange.com/questions/572207/vim-how-to-replace-a-newline-with-the-string-n)
 
 ---
 
@@ -37,7 +33,7 @@ todo
 
 ## 🦾 Database
 
-We've decided to use a `Relational Database` (PostgreSQL). Why because it's fast, scalable and we were most comfortable with it.
+We've decided to use a `Relational Database` (PostgreSQL). Why because it's fast, scalable and we are most comfortable with it.
 
 ### Database Requirements
 
@@ -64,14 +60,14 @@ For easier sorting and adding new categories. Since if a new category is added e
 
 ---
 
-## Content Management System (CMS)
+## 🔩 Content Management System (`CMS`)
 
 In term of management, we’ll need a CMS that permits us to easily add/remove and edit Traits.
 Also do we want to have the option to approve from community members submitted traits before adding them to the Dressing Room.
 
 ![img](./resources/assets/aktivity_diagram_cms.drawio.png)
 
-### Why Github as CMS?
+### Github as `CMS`?
 GitHub is a hosting service for software development and version control using Git. However, temporary, it can be 'misused' as Content Management System (CMS) for the first iteration of this (POC) backend. A central part of the GitHub are `Pull Requests` and `Issues`. Both of these functionalities come into play in the CMS.
 
 - `Pull Requests` let you tell others about changes you've pushed to a branch in a repository on GitHub. This functionality can be used for the Trait image submission process. As soon as a user submits a new Trait, a `Pull Request` is opened by the backend ([Github App](https://docs.github.com/en/developers/apps/getting-started-with-apps/about-apps)) and an admin can check whether the suggested changes (the newly added image and chosen Category) are appropriate. If the Trait corresponds with the Guidelines, the `Pull Request` can be merged and the changes get applied by the backend. If the Trait doesn't fit, an admin can update/correct the provided changes or close the `Pull Request`.  If the `Pull Request` is closed, the changes won't get applied.
@@ -80,20 +76,32 @@ GitHub is a hosting service for software development and version control using G
 By using Github we avoid implementing a custom authentication system as a Github Repository has integrated authentisation and admins can be granted the required managment rights.
 In the future we might design and build a custom CMS platform that purley serves the purpose of managing the Trait content.
 
-### Get Started
-- [Blog Post](https://medium.com/@knidarkness/creating-a-github-app-with-node-js-3bda731d45b9)
-
-### Test Github Webhook locally
-- [Gist](https://gist.github.com/joyrexus/7898e57be3478b4522ec5654c3cb572e)
-- [Seem.io](https://smee.io/)
+### Rate Limiting of Github API
+The [rate limit per hours is `5k` requests](https://docs.github.com/en/developers/apps/building-github-apps/rate-limits-for-github-apps) which is more than enough.
 
 ---
 
-## Image Hosting
+## 🖼 Image Hosting
 
-The Trait assets need to be hosted somewhere,
-where the frontend and backend can easily access them via a URL.
+The Trait-Assets have to be accessable from the backend as well as from the frontend.
+The backend needs the capability to dynamically add, edit and remove Trait-Assets from the said storage.
 
+### Github as `Image Host`?
+Github can also be temporarily misused as image host. However its very restricted in terms of scalability as it has a soft limit of `1GB` and hard limit of `5GB` overall storage capazity.
+Thus its not the best option in the long run but the best option for the short run,
+as its easy to setup and integrates with our `CMS` system.
+
+### Size limit of Github Repo
+The [max file size is `100MB`](https://docs.github.com/en/repositories/working-with-files/managing-large-files/about-large-files-on-github#file-size-limits) and [the max repo size is 5GB](https://docs.github.com/en/repositories/working-with-files/managing-large-files/about-large-files-on-github#repository-size-limits). The only limiting facctor might be the **max repo size** as its not scalable. However it should be enough for now. If we assume each trait with the differen scaling factors requires `2MB` we could store `2500` Traits. The base Okay Bear collection [has `171` Traits](https://raritysniper.com/okay-bears/traits).
+
+- [Stackoverflow](https://stackoverflow.com/questions/23843721/can-github-be-used-for-hosting-files-mp3-and-images)
+- [Git Large File Storage](https://git-lfs.github.com/)
+- [Git Sizer](https://github.com/github/git-sizer)
+
+### Alternatives
+We will built the backend plugin and play and have an `Image Upload Handler` so we can easily swap the Image Hosting Provider in case we run into any issues. Here are some considerable alternatives:
+- Google Drive
+- AWS (not free)
 
 ---
 
