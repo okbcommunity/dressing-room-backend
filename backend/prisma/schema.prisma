@@ -15,10 +15,10 @@ datasource db {
 // ============================================================================
 
 model Bear {
-  id            String          @id @default(uuid())
-  number        Int             @unique
-  public_key    String?         @unique
-  Bear_Attribut Bear_Attribut[]
+  id         String          @id @default(uuid())
+  number     Int             @unique
+  public_key String?         @unique
+  attributes Bear_Attribut[]
 }
 
 // https://www.prisma.io/docs/concepts/components/prisma-schema/relations/many-to-many-relations
@@ -32,10 +32,10 @@ model Bear_Attribut {
 }
 
 model Category {
-  id       String     @id @default(uuid())
-  name     String
-  Attribut Attribut[]
-  weight   Int
+  id         String     @id @default(uuid())
+  name       String
+  weight     Int
+  attributes Attribut[]
 }
 
 model Attribut {
@@ -46,5 +46,5 @@ model Attribut {
   image_url_web          String
   image_url_png_2000x200 String
   image_url_png_512x512  String
-  Bear_Attribut          Bear_Attribut[]
+  bears                  Bear_Attribut[]
 }
