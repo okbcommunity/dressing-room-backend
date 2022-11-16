@@ -1,6 +1,7 @@
 import { createServer as createHttpServer } from 'http';
 import app from './app';
 import config, { STAGE } from './config';
+import { closeDB, connectDB } from './core/db';
 import { setupGithubWebhookDevRedirect } from './core/githubapp';
 
 export const { httpServer } = (() => {
@@ -33,13 +34,19 @@ export const { httpServer } = (() => {
     closeGithubWebhookDevRedirect = setupGithubWebhookDevRedirect();
   }
 
+  // Init DB Connection
+  connectDB();
+
   // Listen '[STRG] + C' event (stop server event) emitted by NodeJs
   // https://nairihar.medium.com/graceful-shutdown-in-nodejs-2f8f59d1c357
-  process.on('SIGTERM', () => {
-    console.log('Starting to shutdown backend.');
+  function onKill() {
+    console.log('Shutting down backend.');
 
     // Close Github Dev Webhook redirect
     closeGithubWebhookDevRedirect();
+
+    // Close DB Connection
+    closeDB();
 
     // Shut down server
     httpServer.close(() => {
@@ -47,7 +54,9 @@ export const { httpServer } = (() => {
     });
 
     process.exit(0);
-  });
+  }
+  process.on('SIGTERM', onKill);
+  process.on('SIGINT', onKill);
 
   return { httpServer };
 })();
