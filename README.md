@@ -51,11 +51,6 @@ We've decided to use a `Relational Database` (PostgreSQL). Why because it's fast
 
 ![img](./resources/assets/uml_er_diagram.drawio.png)
 
-#### FAQ
-
-**Why extracted Table `Category_Weight`?** </br>
-For easier sorting and adding new categories. Since if a new category is added each weight needs to be updated based on where the new category is ‘ranked’.
-
 </details>
 
 ---
@@ -65,7 +60,10 @@ For easier sorting and adding new categories. Since if a new category is added e
 In term of management, we’ll need a CMS that permits us to easily add/remove and edit Traits.
 Also do we want to have the option to approve from community members submitted traits before adding them to the Dressing Room.
 
-![img](./resources/assets/aktivity_diagram_cms.drawio.png)
+### Concept
+
+<details>
+<summary>v1</summary>
 
 ### Github as `CMS`?
 GitHub is a hosting service for software development and version control using Git. However, temporary, it can be 'misused' as Content Management System (CMS) for the first iteration of this (POC) backend. A central part of the GitHub are `Pull Requests` and `Issues`. Both of these functionalities come into play in the CMS.
@@ -76,8 +74,11 @@ GitHub is a hosting service for software development and version control using G
 By using Github we avoid implementing a custom authentication system as a Github Repository has integrated authentisation and admins can be granted the required managment rights.
 In the future we might design and build a custom CMS platform that purley serves the purpose of managing the Trait content.
 
+![img](./resources/assets/aktivity_diagram_cms.drawio.png)
 ### Rate Limiting of Github API
 The [rate limit per hours is `5k` requests](https://docs.github.com/en/developers/apps/building-github-apps/rate-limits-for-github-apps) which is more than enough.
+
+</details>
 
 ---
 
@@ -85,6 +86,11 @@ The [rate limit per hours is `5k` requests](https://docs.github.com/en/developer
 
 The Trait-Assets have to be accessable from the backend as well as from the frontend.
 The backend needs the capability to dynamically add, edit and remove Trait-Assets from the said storage.
+
+### Concept
+
+<details>
+<summary>v1</summary>
 
 ### Github as `Image Host`?
 Github can also be temporarily misused as image host. However its very restricted in terms of scalability as it has a soft limit of `1GB` and hard limit of `5GB` overall storage capazity.
@@ -98,6 +104,8 @@ The [max file size is `100MB`](https://docs.github.com/en/repositories/working-w
 - [Stackoverflow](https://stackoverflow.com/questions/23843721/can-github-be-used-for-hosting-files-mp3-and-images)
 - [Git Large File Storage](https://git-lfs.github.com/)
 - [Git Sizer](https://github.com/github/git-sizer)
+
+</details>
 
 ### Alternatives
 We will built the backend plugin and play and have an `Image Upload Handler` so we can easily swap the Image Hosting Provider in case we run into any issues. Here are some considerable alternatives:
