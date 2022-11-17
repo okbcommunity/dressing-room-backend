@@ -2,7 +2,7 @@ import path from 'path';
 import appConfig from '../../config/app.config';
 import { readDir, readFile } from '../file';
 
-async function migrate() {
+export async function migrate() {
   migrateAttributes();
   // migrateBears();
 }

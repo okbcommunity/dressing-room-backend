@@ -1,4 +1,5 @@
 import { removeContent, uploadOrUpdateFile } from '../../githubapp/actions';
+import { UploadService } from './upload.service';
 
 class GithubUploadService extends UploadService {
   async upload(path: string, buffer: Buffer): Promise<boolean> {
