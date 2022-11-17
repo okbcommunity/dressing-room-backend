@@ -15,11 +15,22 @@ const githubApp = new App({
   Octokit: CustomOctokit,
 });
 
-export function getInstallationOctokit() {
-  // https://github.com/octokit/app.js/issues/262
-  // InstallationId reflects the 'okbcommunity/dressing-room-cms'
-  // Got installationId from  App Settings > Advanced > 'installation.created' (https://stackoverflow.com/a/73962856/14108895)
-  return githubApp.getInstallationOctokit(31152990);
-}
+export const { getInstallationOctokit } = (() => {
+  let installationOctokit: Octokit | null = null;
+
+  async function getInstallationOctokit() {
+    if (installationOctokit == null) {
+      // https://github.com/octokit/app.js/issues/262
+      // InstallationId reflects the 'okbcommunity/dressing-room-cms'
+      // Got installationId from  App Settings > Advanced > 'installation.created' (https://stackoverflow.com/a/73962856/14108895)
+      installationOctokit = await githubApp.getInstallationOctokit(
+        githubConfig.repo.installationId
+      );
+    }
+    return installationOctokit;
+  }
+
+  return { getInstallationOctokit };
+})();
 
 export default githubApp;

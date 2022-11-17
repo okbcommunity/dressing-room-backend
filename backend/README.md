@@ -87,9 +87,14 @@ can create e.g. Comments in their name.
 
 - [Stackoverflow](https://stackoverflow.com/questions/10265798/determine-project-root-from-a-running-node-js-application)
 
+---
+
 ### Prisma
 
 - [How to Build a REST API with Prisma and PostgreSQL](https://www.digitalocean.com/community/tutorials/how-to-build-a-rest-api-with-prisma-and-postgresql)
+- [Preview Database with PrismaStudio](https://www.prisma.io/studio)
+
+---
 
 ### Docker
 
