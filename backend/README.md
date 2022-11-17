@@ -102,3 +102,9 @@ can create e.g. Comments in their name.
 
 - [`docker ps` - List Containers](https://docs.docker.com/engine/reference/commandline/ps/)
 - [`docker stop {container_name}` - Stop one or more running containers](https://docs.docker.com/engine/reference/commandline/stop/)
+
+---
+
+### How des Node.js handle 10k concurrent requests?
+
+- [Stackoverflow](https://stackoverflow.com/questions/34855352/how-in-general-does-node-js-handle-10-000-concurrent-requests)
