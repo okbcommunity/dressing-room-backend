@@ -1,6 +1,6 @@
 import path from 'path';
 import appConfig from '../../config/app.config';
-import { readDir, readFile } from '../file';
+import { readDir, readFile, readFilesFromDir } from '../file';
 
 export async function migrate() {
   migrateAttributes();
@@ -16,10 +16,31 @@ async function migrateAttributes() {
   // Create Category based on folder the Trait is in
   // https://www.npmjs.com/package/webp-converter
 
-  const traitsFolderPath = path.join(appConfig.rootPath, 'local/traits');
-  const filePaths = await readDir(traitsFolderPath);
+  const pathToTraitsFolder = path.join(appConfig.rootPath, 'local/traits');
 
-  console.log({ filePaths });
+  // Read Traits directory containing Traits Assets in Category directories
+  const categoryDirNames = await readDir(pathToTraitsFolder);
+
+  for (const categoryDirName of categoryDirNames) {
+    const categoryName = categoryDirName.toLowerCase();
+
+    // TODO create Category in DB
+
+    // Read Trait Assets in Category directory
+    const traitAssets = await readFilesFromDir(
+      `${pathToTraitsFolder}/${categoryDirName}`,
+      true
+    );
+
+    for (const traitAssetKey of Object.keys(traitAssets)) {
+      const traitAsset = traitAssets[traitAssetKey];
+
+      // TODO create different variants of Trait Asset
+
+      // TODO create Trait in DB
+      console.log({ traitAssetKey });
+    }
+  }
 }
 
 async function migrateBears() {
