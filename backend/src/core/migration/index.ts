@@ -91,7 +91,7 @@ function formatTraitName(name: string, categoryName: string): string {
       .split(' ')
       .map((word) =>
         word != null
-          ? `${word[0].toUpperCase()}${word.substring(1).toLowerCase()}`
+          ? `${word.charAt(0).toUpperCase()}${word.substring(1).toLowerCase()}`
           : word
       );
     newName = words.join(' ');
