@@ -4,7 +4,7 @@ export async function readFile(filepath: string): Promise<Buffer> {
   return await new Promise((resolve, reject) => {
     fs.readFile(filepath, (err, content) => {
       if (err) {
-        console.error('Error: Reading File', { filepath });
+        console.error('Error while reading File!', { filepath });
         reject(err);
       }
       resolve(content);
@@ -16,7 +16,7 @@ export async function readDir(dirpath: string): Promise<string[]> {
   return await new Promise((resolve, reject) => {
     fs.readdir(dirpath, (err, filenames) => {
       if (err) {
-        console.error('Error: Reading Dir', { dirpath });
+        console.error('Error while reading Dir!', { dirpath });
         reject(err);
       }
       resolve(filenames);
@@ -48,6 +48,30 @@ export async function readFilesFromDir(
   }
 
   return filesObject;
+}
+
+export async function writeFile(filepath: string, data: Buffer): Promise<void> {
+  return await new Promise((resolve, reject) => {
+    fs.writeFile(filepath, data, (err) => {
+      if (err) {
+        console.log('Error while writing File!', { filepath });
+        reject(err);
+      }
+      resolve();
+    });
+  });
+}
+
+export async function writeDir(dirpath: string): Promise<void> {
+  return await new Promise((resolve, reject) => {
+    fs.mkdir(dirpath, { recursive: true }, (err) => {
+      if (err) {
+        console.log('Error while writing Dir!', { dirpath });
+        reject(err);
+      }
+      resolve();
+    });
+  });
 }
 
 export function isFile(path: string): boolean {
