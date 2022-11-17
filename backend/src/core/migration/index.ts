@@ -77,25 +77,30 @@ async function migrateBears() {
 }
 
 function formatTraitName(name: string, categoryName: string): string {
-  // Replace general not required characters
-  let newName = name
-    .replace(categoryName, '') // Replace Category Name (e.g. fur_happy.png -> _happy.png)
-    .replace('_', ' ')
-    .replace('.png', '')
-    .replace(/[^a-zA-Z ]/g, '')
-    .trim();
-  // Make each Word uppercase (e.g. fur tan -> Fur Tan)
-  const words = newName
-    .split(' ')
-    .map((word) =>
-      word != null
-        ? `${word[0].toUpperCase()}${word.substring(1).toLowerCase()}`
-        : word
-    );
-  newName = words.join(' ');
+  let newName = name;
+  try {
+    // Replace general not required characters
+    newName = newName
+      .replace(categoryName, '') // Replace Category Name (e.g. fur_happy.png -> _happy.png)
+      .replace('_', ' ')
+      .replace('.png', '')
+      .replace(/[^a-zA-Z ]/g, '')
+      .trim();
+    // Make each Word uppercase (e.g. fur tan -> Fur Tan)
+    const words = newName
+      .split(' ')
+      .map((word) =>
+        word != null
+          ? `${word[0].toUpperCase()}${word.substring(1).toLowerCase()}`
+          : word
+      );
+    newName = words.join(' ');
+  } catch (err) {
+    console.error(`Failed to parse '${name}'!`);
+  }
   return newName;
 }
 
 function formatCategoryName(name: string): string {
-  return name.charAt(0).toUpperCase + name.slice(1).toLowerCase();
+  return name.charAt(0).toUpperCase() + name.slice(1).toLowerCase();
 }
