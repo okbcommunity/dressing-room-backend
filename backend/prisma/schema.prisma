@@ -15,40 +15,40 @@ datasource db {
 // ============================================================================
 
 model Bear {
-  id         String          @id @default(uuid())
-  number     Int             @unique
-  public_key String?         @unique
-  attributes Bear_Attribut[]
+  id         String       @id @default(uuid())
+  number     Int          @unique
+  public_key String?      @unique
+  traits     Bear_Trait[]
 }
 
 // https://www.prisma.io/docs/concepts/components/prisma-schema/relations/many-to-many-relations
-model Bear_Attribut {
-  bear        Bear     @relation(fields: [bear_id], references: [id])
-  bear_id     String
-  attribut    Attribut @relation(fields: [attribut_id], references: [id])
-  attribut_id String
+model Bear_Trait {
+  bear     Bear   @relation(fields: [bear_id], references: [id])
+  bear_id  String
+  trait    Trait  @relation(fields: [trait_id], references: [id])
+  trait_id String
 
-  @@id([bear_id, attribut_id])
+  @@id([bear_id, trait_id])
 }
 
 model Category {
-  id         String     @id @default(uuid())
+  id         String   @id @default(uuid())
   name       String
   weight     Int
-  attributes Attribut[]
-  created_at DateTime   @default(now())
-  updated_at DateTime   @updatedAt
+  traits     Trait[]
+  created_at DateTime @default(now())
+  updated_at DateTime @updatedAt
 }
 
-model Attribut {
-  id                     String          @id @default(uuid())
-  name                   String
-  category_id            String
-  category               Category        @relation(fields: [category_id], references: [id])
-  image_url_web          String
-  image_url_png_2000x200 String
-  image_url_png_512x512  String
-  bears                  Bear_Attribut[]
-  created_at             DateTime        @default(now())
-  updated_at             DateTime        @updatedAt
+model Trait {
+  id                      String       @id @default(uuid())
+  name                    String
+  category_id             String
+  category                Category     @relation(fields: [category_id], references: [id])
+  image_url_webp          String?
+  image_url_png_2000x2000 String?
+  image_url_png_512x512   String?
+  bears                   Bear_Trait[]
+  created_at              DateTime     @default(now())
+  updated_at              DateTime     @updatedAt
 }

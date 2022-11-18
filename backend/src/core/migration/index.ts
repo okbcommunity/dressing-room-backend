@@ -1,7 +1,9 @@
+import { Prisma } from '@prisma/client';
 import path from 'path';
 import sharp from 'sharp';
 import appConfig from '../../config/app.config';
 import { generateUUID } from '../../utlis';
+import { db } from '../db';
 import { readDir, writeFile, readFilesFromDir } from '../file';
 
 export async function migrate() {
@@ -10,14 +12,6 @@ export async function migrate() {
 }
 
 async function migrateAttributes() {
-  // TODO Read Trait assets from traits folder (download from google drive)
-  //  Note: some naming changes might be neccessary
-  // TODO Convert Trait assets to '.webp' and crop it to 512x512
-  // TODO Upload Trait assets to Github (for now)
-  // TODO Add Trait to database
-  // Create Category based on folder the Trait is in
-  // https://www.npmjs.com/package/webp-converter
-
   const pathToTraitsFolder = path.join(appConfig.rootPath, 'local/traits');
   const pathToParsedTraitsFolder = path.join(
     appConfig.rootPath,
@@ -29,13 +23,15 @@ async function migrateAttributes() {
 
   for (const categoryDirKey of categoryDirKeys) {
     const categoryName = formatCategoryName(categoryDirKey);
-    const category = {
+    const category: Omit<Prisma.CategoryCreateInput, 'traits'> = {
       id: generateUUID(),
       name: categoryName,
+      weight: 0,
     };
-    const attributes = [];
+    const traits: Omit<Prisma.TraitCreateInput, 'category'>[] = [];
 
-    // TODO create Category in DB
+    // Logging
+    console.log(`Started migrating Category '${categoryName}'`);
 
     // Read Trait Assets in Category directory
     const traitAssets = await readFilesFromDir(
@@ -55,7 +51,7 @@ async function migrateAttributes() {
       );
 
       // Save Trait Asset Variatns to File System (for testing)
-      const traitAssetVariantPaths = saveTraitAssetVariantsToFileSystem(
+      const traitAssetVariantPaths = await saveTraitAssetVariantsToFileSystem(
         traitAssetVariants,
         pathToParsedTraitsFolder,
         id
@@ -63,13 +59,26 @@ async function migrateAttributes() {
 
       // TODO Upload Trait to Github
 
-      // TODO create Trait in DB
-
-      console.log({
-        name: traitName,
+      traits.push({
         id,
+        name: traitName,
+        image_url_webp: traitAssetVariantPaths.webp,
+        image_url_png_2000x2000: traitAssetVariantPaths.png2000x2000,
+        image_url_png_512x512: traitAssetVariantPaths.png512x512,
       });
     }
+
+    // Added Category and corresponding Attributes to DB
+    await db.category.create({
+      data: {
+        id: category.id,
+        name: category.name,
+        weight: category.weight,
+        traits: {
+          create: traits,
+        },
+      },
+    });
   }
 }
 

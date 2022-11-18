@@ -17,6 +17,6 @@ export default {
   port,
   baseUrl: `${replaceBracket(baseUrl, port.toString())}/v${version}`,
   corsOrigins: corsOrigins.split(', '),
-  stage: nodeEnv,
+  stage: nodeEnv as STAGE,
   rootPath,
 };

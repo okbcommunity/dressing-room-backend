@@ -3,7 +3,7 @@ import { PrismaClient } from '@prisma/client';
 export const { closeDB, connectDB, db } = (() => {
   let db: PrismaClient | null = null;
 
-  async function connectDB(): Promise<PrismaClient> {
+  function connectDB(): PrismaClient {
     if (db == null) {
       console.log('Successfully connected to database.');
       db = new PrismaClient();

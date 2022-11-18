@@ -8,11 +8,11 @@ CREATE TABLE "Bear" (
 );
 
 -- CreateTable
-CREATE TABLE "Bear_Attribut" (
+CREATE TABLE "Bear_Trait" (
     "bear_id" TEXT NOT NULL,
-    "attribut_id" TEXT NOT NULL,
+    "trait_id" TEXT NOT NULL,
 
-    CONSTRAINT "Bear_Attribut_pkey" PRIMARY KEY ("bear_id","attribut_id")
+    CONSTRAINT "Bear_Trait_pkey" PRIMARY KEY ("bear_id","trait_id")
 );
 
 -- CreateTable
@@ -27,17 +27,17 @@ CREATE TABLE "Category" (
 );
 
 -- CreateTable
-CREATE TABLE "Attribut" (
+CREATE TABLE "Trait" (
     "id" TEXT NOT NULL,
     "name" TEXT NOT NULL,
     "category_id" TEXT NOT NULL,
-    "image_url_web" TEXT NOT NULL,
-    "image_url_png_2000x200" TEXT NOT NULL,
-    "image_url_png_512x512" TEXT NOT NULL,
+    "image_url_webp" TEXT,
+    "image_url_png_2000x2000" TEXT,
+    "image_url_png_512x512" TEXT,
     "created_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updated_at" TIMESTAMP(3) NOT NULL,
 
-    CONSTRAINT "Attribut_pkey" PRIMARY KEY ("id")
+    CONSTRAINT "Trait_pkey" PRIMARY KEY ("id")
 );
 
 -- CreateIndex
@@ -47,10 +47,10 @@ CREATE UNIQUE INDEX "Bear_number_key" ON "Bear"("number");
 CREATE UNIQUE INDEX "Bear_public_key_key" ON "Bear"("public_key");
 
 -- AddForeignKey
-ALTER TABLE "Bear_Attribut" ADD CONSTRAINT "Bear_Attribut_bear_id_fkey" FOREIGN KEY ("bear_id") REFERENCES "Bear"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+ALTER TABLE "Bear_Trait" ADD CONSTRAINT "Bear_Trait_bear_id_fkey" FOREIGN KEY ("bear_id") REFERENCES "Bear"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
 
 -- AddForeignKey
-ALTER TABLE "Bear_Attribut" ADD CONSTRAINT "Bear_Attribut_attribut_id_fkey" FOREIGN KEY ("attribut_id") REFERENCES "Attribut"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+ALTER TABLE "Bear_Trait" ADD CONSTRAINT "Bear_Trait_trait_id_fkey" FOREIGN KEY ("trait_id") REFERENCES "Trait"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
 
 -- AddForeignKey
-ALTER TABLE "Attribut" ADD CONSTRAINT "Attribut_category_id_fkey" FOREIGN KEY ("category_id") REFERENCES "Category"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+ALTER TABLE "Trait" ADD CONSTRAINT "Trait_category_id_fkey" FOREIGN KEY ("category_id") REFERENCES "Category"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
