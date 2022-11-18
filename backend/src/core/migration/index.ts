@@ -2,16 +2,25 @@ import { Prisma } from '@prisma/client';
 import path from 'path';
 import sharp from 'sharp';
 import appConfig from '../../config/app.config';
-import { generateUUID } from '../../utlis';
+import { generateUUID, replaceBracket } from '../../utlis';
 import { db } from '../db';
 import { readDir, writeFile, readFilesFromDir } from '../file';
 
 export async function migrate() {
-  migrateAttributes();
+  migrateTraits();
   // migrateBears();
 }
 
-async function migrateAttributes() {
+// ============================================================================
+// Migrate Traits (from Traits Asset Folder)
+// ============================================================================
+
+async function migrateTraits() {
+  // Logging
+  const timetaken = 'Time taken migrating Categories and Traits';
+  console.log('--- Start migrating Traits ---');
+  console.time(timetaken);
+
   const pathToTraitsFolder = path.join(appConfig.rootPath, 'local/traits');
   const pathToParsedTraitsFolder = path.join(
     appConfig.rootPath,
@@ -80,12 +89,24 @@ async function migrateAttributes() {
       },
     });
   }
+
+  // Logging
+  console.timeEnd(timetaken);
+  console.log('--- End migrating Traits ---');
 }
+
+// ============================================================================
+// Migrate Bears (from CSV)
+// ============================================================================
 
 async function migrateBears() {
   // TODO Read Bears from '.csv. file
   // TODO Add Bears to database and assign specified Attributes
 }
+
+// ============================================================================
+// Helper
+// ============================================================================
 
 function formatTraitName(name: string, categoryName: string): string {
   let newName = name;
@@ -93,6 +114,7 @@ function formatTraitName(name: string, categoryName: string): string {
     // Replace general not required characters
     newName = newName
       .replace(categoryName, '') // Replace Category Name (e.g. fur_happy.png -> _happy.png)
+      .replace(categoryName.toLowerCase(), '')
       .replace('_', ' ')
       .replace('.png', '')
       .replace(/[^a-zA-Z ]/g, '')
@@ -149,8 +171,8 @@ async function saveTraitAssetVariantsToFileSystem(
 
   try {
     if (traitAssetVariants.png2000x2000 != null) {
-      (paths.png2000x2000 = `${path}/${id}_2000x2000.png`),
-        await writeFile(paths.png2000x2000, traitAssetVariants.png2000x2000);
+      paths.png2000x2000 = `${path}/${id}_2000x2000.png`;
+      await writeFile(paths.png2000x2000, traitAssetVariants.png2000x2000);
     }
 
     if (traitAssetVariants.png512x512 != null) {
