@@ -2,12 +2,16 @@ import { Prisma } from '@prisma/client';
 import path from 'path';
 import sharp from 'sharp';
 import appConfig from '../../config/app.config';
-import { generateUUID, replaceBracket } from '../../utlis';
+import { generateUUID } from '../../utlis';
 import { db } from '../db';
-import { readDir, writeFile, readFilesFromDir } from '../file';
+import { readDir, writeFile, readFilesFromDir, renameFilesDeep } from '../file';
 
 export async function migrate() {
   migrateTraits();
+  // renameFilesDeep(
+  //   path.join(appConfig.rootPath, 'local/traits'),
+  //   (dirpath, filename) => `${dirpath}/${filename.replace('_', '-')}`
+  // );
   // migrateBears();
 }
 
@@ -31,13 +35,21 @@ async function migrateTraits() {
   const categoryDirKeys = await readDir(pathToTraitsFolder);
 
   for (const categoryDirKey of categoryDirKeys) {
-    const categoryName = formatCategoryName(categoryDirKey);
-    const category: Omit<Prisma.CategoryCreateInput, 'traits'> = {
-      id: generateUUID(),
-      name: categoryName,
-      weight: 0,
-    };
-    const traits: Omit<Prisma.TraitCreateInput, 'category'>[] = [];
+    const { index: layerIndex, name: categoryName } =
+      formatCategoryName(categoryDirKey);
+
+    // Create or Get existing Layer from DB
+    const layerId = await createOrGetLayer(layerIndex);
+
+    // Create Category in DB
+    const categoryId = generateUUID();
+    await db.category.create({
+      data: {
+        id: categoryId,
+        name: categoryName,
+        layer_id: layerId,
+      },
+    });
 
     // Logging
     console.log(`Started migrating Category '${categoryName}'`);
@@ -68,26 +80,18 @@ async function migrateTraits() {
 
       // TODO Upload Trait to Github
 
-      traits.push({
-        id,
-        name: traitName,
-        image_url_webp: traitAssetVariantPaths.webp,
-        image_url_png_2000x2000: traitAssetVariantPaths.png2000x2000,
-        image_url_png_512x512: traitAssetVariantPaths.png512x512,
+      // Create Trait in DB
+      await db.trait.create({
+        data: {
+          id,
+          name: traitName,
+          category_id: categoryId,
+          image_url_webp: traitAssetVariantPaths.webp,
+          image_url_png_2000x2000: traitAssetVariantPaths.png2000x2000,
+          image_url_png_512x512: traitAssetVariantPaths.png512x512,
+        },
       });
     }
-
-    // Added Category and corresponding Attributes to DB
-    await db.category.create({
-      data: {
-        id: category.id,
-        name: category.name,
-        weight: category.weight,
-        traits: {
-          create: traits,
-        },
-      },
-    });
   }
 
   // Logging
@@ -113,11 +117,11 @@ function formatTraitName(name: string, categoryName: string): string {
   try {
     // Replace general not required characters
     newName = newName
-      .replace(categoryName, '') // Replace Category Name (e.g. fur_happy.png -> _happy.png)
-      .replace(categoryName.toLowerCase(), '')
+      .toLowerCase()
+      .replace(categoryName.toLowerCase(), '') // Replace Category Name (e.g. fur_happy.png -> _happy.png)
       .replace('_', ' ')
       .replace('.png', '')
-      .replace(/[^a-zA-Z ]/g, '')
+      .replace(/[^a-zA-Z ]/g, '') // Replace spcial signs
       .trim();
     // Make each Word uppercase (e.g. fur tan -> Fur Tan)
     const words = newName
@@ -134,8 +138,24 @@ function formatTraitName(name: string, categoryName: string): string {
   return newName;
 }
 
-function formatCategoryName(name: string): string {
-  return name.charAt(0).toUpperCase() + name.slice(1).toLowerCase();
+function formatCategoryName(name: string): { name: string; index: number } {
+  const parts = name.split('-');
+  let index = -1;
+  let newName = name;
+
+  if (parts[0] != null) {
+    index = +parts[0];
+  }
+
+  if (parts[1] != null) {
+    newName =
+      parts[1].charAt(0).toUpperCase() + parts[1].slice(1).toLowerCase();
+  }
+
+  return {
+    index,
+    name: newName,
+  };
 }
 
 async function generateTraitAssetVariants(
@@ -190,6 +210,25 @@ async function saveTraitAssetVariantsToFileSystem(
   }
 
   return paths;
+}
+
+async function createOrGetLayer(index: number): Promise<string> {
+  let id = generateUUID();
+  const response = await db.layer.findUnique({
+    where: { index },
+    select: { id: true },
+  });
+  if (response == null) {
+    await db.layer.create({
+      data: {
+        id,
+        index,
+      },
+    });
+  } else {
+    id = response.id;
+  }
+  return id;
 }
 
 type TTraitAssetVariants = {

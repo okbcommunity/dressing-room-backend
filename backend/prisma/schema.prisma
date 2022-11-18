@@ -27,28 +27,68 @@ model Bear_Trait {
   bear_id  String
   trait    Trait  @relation(fields: [trait_id], references: [id])
   trait_id String
+  layer    Layer  @relation(fields: [layer_id], references: [id])
+  layer_id String
 
-  @@id([bear_id, trait_id])
+  @@id([bear_id, layer_id])
 }
 
 model Category {
   id         String   @id @default(uuid())
   name       String
-  weight     Int
+  layer      Layer    @relation(fields: [layer_id], references: [id])
+  layer_id   String
   traits     Trait[]
   created_at DateTime @default(now())
   updated_at DateTime @updatedAt
 }
 
+model Layer {
+  id         String       @id @default(uuid())
+  index      Int          @unique
+  Category   Category[]
+  Bear_Trait Bear_Trait[]
+}
+
 model Trait {
-  id                      String       @id @default(uuid())
+  id                      String            @id @default(uuid())
   name                    String
   category_id             String
-  category                Category     @relation(fields: [category_id], references: [id])
+  category                Category          @relation(fields: [category_id], references: [id])
   image_url_webp          String?
   image_url_png_2000x2000 String?
   image_url_png_512x512   String?
   bears                   Bear_Trait[]
-  created_at              DateTime     @default(now())
-  updated_at              DateTime     @updatedAt
+  depending_traits        Dependent_Trait[] @relation("depending") // Traits that depend on this Trait
+  depending_on_traits     Dependent_Trait[] @relation("depending_on") // Traits on which this Trait depends on
+  created_at              DateTime          @default(now())
+  updated_at              DateTime          @updatedAt
 }
+
+// https://stackoverflow.com/questions/35783630/many-to-many-self-referencing-relationship
+model Dependent_Trait {
+  trait                 Trait  @relation("depending", fields: [trait_id], references: [id])
+  trait_id              String
+  depending_on_trait    Trait  @relation("depending_on", fields: [depending_on_trait_id], references: [id])
+  depending_on_trait_id String
+
+  @@id([trait_id, depending_on_trait_id])
+}
+
+// Example
+// {
+//   id: Robot_Fur
+//   depending_traits: [Robot_Eye],
+//   depending_on_traits: []
+// }
+
+// {
+//   trait_id: Robot_Eye
+//   depending_on_id: Robot_Fur
+// }
+
+// {
+//   id: Robot_Eye
+//   depending_traits: [],
+//   depending_on_traits: [Robot_Fur]
+// }

@@ -33,6 +33,7 @@ export async function readFilesFromDir(
 
   for (const key in filesInDir) {
     const filename = filesInDir[key];
+
     // Read shallow File
     if (isFile(`${dirpath}/${filename}`)) {
       const file = await readFile(`${dirpath}/${filename}`);
@@ -80,4 +81,23 @@ export function isFile(path: string): boolean {
 
 export function isDir(path: string): boolean {
   return fs.lstatSync(path).isDirectory();
+}
+
+export async function renameFilesDeep(
+  dirpath: string,
+  rename: (dirpath: string, filename: string) => string
+) {
+  const filesInDir = await readDir(dirpath);
+
+  for (const key in filesInDir) {
+    const filename = filesInDir[key];
+    // Read shallow File
+    if (isFile(`${dirpath}/${filename}`)) {
+      fs.rename(`${dirpath}/${filename}`, rename(dirpath, filename), () => {});
+    }
+    // Read deep if Folder
+    else if (isDir(`${dirpath}/${filename}`)) {
+      await renameFilesDeep(`${dirpath}/${filename}`, rename);
+    }
+  }
 }
