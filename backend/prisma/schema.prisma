@@ -36,6 +36,8 @@ model Category {
   name       String
   weight     Int
   attributes Attribut[]
+  created_at DateTime   @default(now())
+  updated_at DateTime   @updatedAt
 }
 
 model Attribut {
@@ -47,4 +49,6 @@ model Attribut {
   image_url_png_2000x200 String
   image_url_png_512x512  String
   bears                  Bear_Attribut[]
+  created_at             DateTime        @default(now())
+  updated_at             DateTime        @updatedAt
 }

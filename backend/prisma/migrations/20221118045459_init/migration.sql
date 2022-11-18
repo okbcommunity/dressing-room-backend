@@ -20,6 +20,8 @@ CREATE TABLE "Category" (
     "id" TEXT NOT NULL,
     "name" TEXT NOT NULL,
     "weight" INTEGER NOT NULL,
+    "created_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updated_at" TIMESTAMP(3) NOT NULL,
 
     CONSTRAINT "Category_pkey" PRIMARY KEY ("id")
 );
@@ -32,6 +34,8 @@ CREATE TABLE "Attribut" (
     "image_url_web" TEXT NOT NULL,
     "image_url_png_2000x200" TEXT NOT NULL,
     "image_url_png_512x512" TEXT NOT NULL,
+    "created_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updated_at" TIMESTAMP(3) NOT NULL,
 
     CONSTRAINT "Attribut_pkey" PRIMARY KEY ("id")
 );

@@ -29,6 +29,11 @@ async function migrateAttributes() {
 
   for (const categoryDirKey of categoryDirKeys) {
     const categoryName = formatCategoryName(categoryDirKey);
+    const category = {
+      id: generateUUID(),
+      name: categoryName,
+    };
+    const attributes = [];
 
     // TODO create Category in DB
 
@@ -44,20 +49,17 @@ async function migrateAttributes() {
       const id = generateUUID();
 
       // Create different variants of the Trait Asset
-      const png2000x2000 = traitAsset;
-      const png512x512 = await sharp(traitAsset).resize(512, 512).toBuffer();
-      const webp = await sharp(traitAsset).webp().toBuffer();
+      const traitAssetVariants = await generateTraitAssetVariants(
+        traitAsset,
+        traitName
+      );
 
-      // Store assets in Parse Traits folder (for testing)
-      await writeFile(
-        `${pathToParsedTraitsFolder}/${id}_2000x2000.png`,
-        png2000x2000
+      // Save Trait Asset Variatns to File System (for testing)
+      const traitAssetVariantPaths = saveTraitAssetVariantsToFileSystem(
+        traitAssetVariants,
+        pathToParsedTraitsFolder,
+        id
       );
-      await writeFile(
-        `${pathToParsedTraitsFolder}/${id}_512x512.png`,
-        png512x512
-      );
-      await writeFile(`${pathToParsedTraitsFolder}/${id}.webp`, webp);
 
       // TODO Upload Trait to Github
 
@@ -104,3 +106,69 @@ function formatTraitName(name: string, categoryName: string): string {
 function formatCategoryName(name: string): string {
   return name.charAt(0).toUpperCase() + name.slice(1).toLowerCase();
 }
+
+async function generateTraitAssetVariants(
+  traitAsset: Buffer,
+  name: string
+): Promise<TTraitAssetVariants> {
+  let png2000x2000 = null;
+  let png512x512 = null;
+  let webp = null;
+  try {
+    png2000x2000 = traitAsset;
+    png512x512 = await sharp(traitAsset).resize(512, 512).toBuffer();
+    webp = await sharp(traitAsset).webp().toBuffer();
+  } catch (err) {
+    console.error(
+      `Failed to convert Trait Asset '${name}' in specified variants!`
+    );
+  }
+
+  return { png2000x2000, png512x512, webp };
+}
+
+async function saveTraitAssetVariantsToFileSystem(
+  traitAssetVariants: TTraitAssetVariants,
+  path: string,
+  id: string
+): Promise<TTraitAssetVariantPaths> {
+  const paths: TTraitAssetVariantPaths = {
+    png2000x2000: null,
+    png512x512: null,
+    webp: null,
+  };
+
+  try {
+    if (traitAssetVariants.png2000x2000 != null) {
+      (paths.png2000x2000 = `${path}/${id}_2000x2000.png`),
+        await writeFile(paths.png2000x2000, traitAssetVariants.png2000x2000);
+    }
+
+    if (traitAssetVariants.png512x512 != null) {
+      paths.png512x512 = `${path}/${id}_512x512.png`;
+      await writeFile(paths.png512x512, traitAssetVariants.png512x512);
+    }
+    if (traitAssetVariants.webp != null) {
+      paths.webp = `${path}/${id}.webp`;
+      await writeFile(paths.webp, traitAssetVariants.webp);
+    }
+  } catch (err) {
+    console.error(`Failed to save Trait Asset Variants to Local File System!`, {
+      id,
+    });
+  }
+
+  return paths;
+}
+
+type TTraitAssetVariants = {
+  png2000x2000: Buffer | null;
+  png512x512: Buffer | null;
+  webp: Buffer | null;
+};
+
+type TTraitAssetVariantPaths = {
+  png2000x2000: string | null;
+  png512x512: string | null;
+  webp: string | null;
+};
