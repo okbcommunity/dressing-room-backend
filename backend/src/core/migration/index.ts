@@ -78,17 +78,17 @@ async function migrateTraits() {
       }
 
       // Create different variants of the Trait Asset
-      const traitAssetVariants = await generateTraitAssetVariants(
-        traitAsset,
-        traitName
-      );
+      // const traitAssetVariants = await generateTraitAssetVariants(
+      //   traitAsset,
+      //   traitName
+      // );
 
       // Save Trait Asset Variatns to File System (for testing)
-      const traitAssetVariantPaths = await saveTraitAssetVariantsToFileSystem(
-        traitAssetVariants,
-        pathToParsedTraitsFolder,
-        id
-      );
+      // const traitAssetVariantPaths = await saveTraitAssetVariantsToFileSystem(
+      //   traitAssetVariants,
+      //   pathToParsedTraitsFolder,
+      //   id
+      // );
 
       // TODO Upload Trait to Github
 
@@ -98,9 +98,9 @@ async function migrateTraits() {
           id,
           name: traitName,
           category_id: categoryId,
-          image_url_webp: traitAssetVariantPaths.webp,
-          image_url_png_2000x2000: traitAssetVariantPaths.png2000x2000,
-          image_url_png_512x512: traitAssetVariantPaths.png512x512,
+          image_url_webp: '', // traitAssetVariantPaths.webp,
+          image_url_png_2000x2000: '', // traitAssetVariantPaths.png2000x2000,
+          image_url_png_512x512: '', /// traitAssetVariantPaths.png512x512,
           depending_on_traits:
             traitDependencyId != null
               ? {
@@ -136,20 +136,26 @@ function formatTraitName(
   name: string,
   categoryName: string
 ): { name: string; dependency: string | null } {
-  const parts = name.split(chainChar);
+  const parts = name
+    .replace(/^.+\//, '') // Replace everything until '/' belonging to the path -> 'closed/closed-albino' -> 'closed-albino'
+    .replace('.png', '')
+    .split(chainChar);
   let dependency: null | string = null;
   let newName = name;
+
   try {
     // Format Name
     if (parts[0] != null) {
-      // Replace general not required characters
+      newName = `${parts[0]}_${parts[1] || ''}`; // Readd Dependency to Display Name
+
+      // Remove or replace not required Chars
       newName = newName
         .toLowerCase()
         .replace(categoryName.toLowerCase(), '') // Replace Category Name (e.g. fur_happy.png -> _happy.png)
         .replace(spaceChar, ' ')
-        .replace('.png', '')
         .replace(/[^a-zA-Z ]/g, '') // Replace spcial signs
         .trim();
+
       // Make each Word uppercase (e.g. fur tan -> Fur Tan)
       const words = newName
         .split(' ')
@@ -170,6 +176,8 @@ function formatTraitName(
   } catch (err) {
     console.error(`Failed to parse Trait Name '${name}'!`);
   }
+
+  console.log({ parts, newName });
 
   return {
     dependency,
