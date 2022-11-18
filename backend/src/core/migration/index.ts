@@ -1,21 +1,30 @@
-import { Prisma, Trait } from '@prisma/client';
+import { Trait } from '@prisma/client';
 import path from 'path';
 import sharp from 'sharp';
 import appConfig from '../../config/app.config';
 import { generateUUID } from '../../utlis';
 import { db } from '../db';
-import { readDir, writeFile, readFilesFromDir, renameFilesDeep } from '../file';
+import {
+  readDir,
+  writeFile,
+  readFilesFromDir,
+  readFile,
+  parseCSVFile,
+} from '../file';
 
 const spaceChar = '_';
 const chainChar = '-';
 
+// Inital run to migrate all Trait Assets into the Database
+// and to the Image Provider of choice
 export async function migrate() {
-  migrateTraits();
   // renameFilesDeep(
   //   path.join(appConfig.rootPath, 'local/traits'),
   //   (dirpath, filename) => `${dirpath}/${filename.replace('_', '-')}`
   // );
-  // migrateBears();
+
+  // migrateTraits();
+  migrateBears();
 }
 
 // ============================================================================
@@ -126,6 +135,12 @@ async function migrateTraits() {
 async function migrateBears() {
   // TODO Read Bears from '.csv. file
   // TODO Add Bears to database and assign specified Attributes
+
+  const file = await readFile(
+    path.join(appConfig.rootPath, 'local/bear_attributes.csv')
+  );
+  const parsedData = parseCSVFile(file, ',');
+  console.log(parsedData);
 }
 
 // ============================================================================
