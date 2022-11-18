@@ -1,10 +1,13 @@
-import { Prisma } from '@prisma/client';
+import { Prisma, Trait } from '@prisma/client';
 import path from 'path';
 import sharp from 'sharp';
 import appConfig from '../../config/app.config';
 import { generateUUID } from '../../utlis';
 import { db } from '../db';
 import { readDir, writeFile, readFilesFromDir, renameFilesDeep } from '../file';
+
+const spaceChar = '_';
+const chainChar = '-';
 
 export async function migrate() {
   migrateTraits();
@@ -62,8 +65,17 @@ async function migrateTraits() {
 
     for (const traitAssetKey of Object.keys(traitAssets)) {
       const traitAsset = traitAssets[traitAssetKey];
-      const traitName = formatTraitName(traitAssetKey, categoryName);
+      const { name: traitName, dependency: traitDependencyName } =
+        formatTraitName(traitAssetKey, categoryName);
       const id = generateUUID();
+
+      // Query Trait dependency if there exists one
+      // e.g. 'closed-coral' depends on 'coral' fur
+      let traitDependencyId: string | null = null;
+      if (traitDependencyName != null) {
+        const trait = await findTraitByName(traitDependencyName);
+        traitDependencyId = trait?.id || null;
+      }
 
       // Create different variants of the Trait Asset
       const traitAssetVariants = await generateTraitAssetVariants(
@@ -89,6 +101,14 @@ async function migrateTraits() {
           image_url_webp: traitAssetVariantPaths.webp,
           image_url_png_2000x2000: traitAssetVariantPaths.png2000x2000,
           image_url_png_512x512: traitAssetVariantPaths.png512x512,
+          depending_on_traits:
+            traitDependencyId != null
+              ? {
+                  create: {
+                    trait_id: traitDependencyId,
+                  },
+                }
+              : undefined,
         },
       });
     }
@@ -112,44 +132,69 @@ async function migrateBears() {
 // Helper
 // ============================================================================
 
-function formatTraitName(name: string, categoryName: string): string {
+function formatTraitName(
+  name: string,
+  categoryName: string
+): { name: string; dependency: string | null } {
+  const parts = name.split(chainChar);
+  let dependency: null | string = null;
   let newName = name;
   try {
-    // Replace general not required characters
-    newName = newName
-      .toLowerCase()
-      .replace(categoryName.toLowerCase(), '') // Replace Category Name (e.g. fur_happy.png -> _happy.png)
-      .replace('_', ' ')
-      .replace('.png', '')
-      .replace(/[^a-zA-Z ]/g, '') // Replace spcial signs
-      .trim();
-    // Make each Word uppercase (e.g. fur tan -> Fur Tan)
-    const words = newName
-      .split(' ')
-      .map((word) =>
-        word != null
-          ? `${word.charAt(0).toUpperCase()}${word.substring(1).toLowerCase()}`
-          : word
-      );
-    newName = words.join(' ');
+    // Format Name
+    if (parts[0] != null) {
+      // Replace general not required characters
+      newName = newName
+        .toLowerCase()
+        .replace(categoryName.toLowerCase(), '') // Replace Category Name (e.g. fur_happy.png -> _happy.png)
+        .replace(spaceChar, ' ')
+        .replace('.png', '')
+        .replace(/[^a-zA-Z ]/g, '') // Replace spcial signs
+        .trim();
+      // Make each Word uppercase (e.g. fur tan -> Fur Tan)
+      const words = newName
+        .split(' ')
+        .map((word) =>
+          word != null
+            ? `${word.charAt(0).toUpperCase()}${word
+                .substring(1)
+                .toLowerCase()}`
+            : word
+        );
+      newName = words.join(' ');
+    }
+
+    // Extract Dependency
+    if (parts[1] != null) {
+      dependency = parts[1].toLowerCase();
+    }
   } catch (err) {
-    console.error(`Failed to parse '${name}'!`);
+    console.error(`Failed to parse Trait Name '${name}'!`);
   }
-  return newName;
+
+  return {
+    dependency,
+    name: newName,
+  };
 }
 
 function formatCategoryName(name: string): { name: string; index: number } {
-  const parts = name.split('-');
+  const parts = name.split(chainChar);
   let index = -1;
   let newName = name;
 
-  if (parts[0] != null) {
-    index = +parts[0];
-  }
+  try {
+    // Extract Layer
+    if (parts[0] != null) {
+      index = +parts[0];
+    }
 
-  if (parts[1] != null) {
-    newName =
-      parts[1].charAt(0).toUpperCase() + parts[1].slice(1).toLowerCase();
+    // Format Name
+    if (parts[1] != null) {
+      newName =
+        parts[1].charAt(0).toUpperCase() + parts[1].slice(1).toLowerCase();
+    }
+  } catch (err) {
+    console.error(`Failed to parse Category Name '${name}'!`);
   }
 
   return {
@@ -229,6 +274,17 @@ async function createOrGetLayer(index: number): Promise<string> {
     id = response.id;
   }
   return id;
+}
+
+async function findTraitByName(name: string): Promise<Trait | null> {
+  return await db.trait.findFirst({
+    where: {
+      name: {
+        equals: name,
+        mode: 'insensitive',
+      },
+    },
+  });
 }
 
 type TTraitAssetVariants = {
