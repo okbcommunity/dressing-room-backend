@@ -10,6 +10,7 @@ import {
   errorLoggerMiddleware,
   invalidPathHandlerMiddleware,
 } from './middleware/error';
+import { rateLimiterMiddleware } from './middleware/security';
 
 // Init Express App
 const { app } = (() => {
@@ -29,12 +30,15 @@ const { app } = (() => {
     })
   );
 
+  // Rate Limiter Middleware
+  app.use(rateLimiterMiddleware);
+
   // Parse JSON Body
   app.use(bodyParser.json());
 
   app.use('/', routes);
 
-  // Error Handling
+  // Error Handling Middleware's
   app.use(invalidPathHandlerMiddleware);
   app.use(errorLoggerMiddleware);
   app.use(errorHandlerMiddleware);
