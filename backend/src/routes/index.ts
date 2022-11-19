@@ -5,15 +5,19 @@ import v1Routes from './v1';
 const router = express.Router();
 
 router.use('/v1', v1Routes);
-router.use('/info', (req, res) => {
-  try {
-    res.send({
-      version: config.app.packageVersion,
-    });
-  } catch (err) {
-    console.log(err);
-    res.sendStatus(400);
+router.use(
+  '/info',
+  (req: express.Request, res: express.Response, next: express.NextFunction) => {
+    try {
+      res.send({
+        apiVersion: 'v1',
+        version: config.app.packageVersion,
+        repo: 'https://github.com/okbcommunity/dressing-room-backend',
+      });
+    } catch (err) {
+      next(err);
+    }
   }
-});
+);
 
 export default router;

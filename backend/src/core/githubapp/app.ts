@@ -1,4 +1,5 @@
 import { App, Octokit } from 'octokit';
+import { STAGE } from '../../config';
 import appConfig from '../../config/app.config';
 import githubConfig from '../../config/github.config';
 
@@ -14,6 +15,10 @@ const githubApp = new App({
   },
   Octokit: CustomOctokit,
 });
+export const allowedWebhookCaller: string[] = ['github.com'];
+if (appConfig.stage === STAGE.LOCAL) {
+  allowedWebhookCaller.push('smee.io');
+}
 
 export const { getInstallationOctokit } = (() => {
   let installationOctokit: Octokit | null = null;

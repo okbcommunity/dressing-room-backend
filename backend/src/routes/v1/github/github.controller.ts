@@ -1,5 +1,7 @@
 import express from 'express';
 import { githubApp } from '../../../core';
+import { allowedWebhookCaller } from '../../../core/githubapp/app';
+import { AppError } from '../../../middleware/error';
 
 export async function githubWebhookController(
   req: express.Request,
@@ -7,6 +9,15 @@ export async function githubWebhookController(
   next: express.NextFunction
 ) {
   try {
+    // Only allow calls from Github and
+    const host = req.get('host') ?? 'unknown';
+    if (!allowedWebhookCaller.includes(host)) {
+      throw new AppError(
+        403,
+        `'${host}' is not allowed to call this Webhook Endpoint!`
+      );
+    }
+
     const githubDeliveryHeaderKey = 'X-GitHub-Delivery';
     const githubDelivery =
       req.headers[githubDeliveryHeaderKey] ??
