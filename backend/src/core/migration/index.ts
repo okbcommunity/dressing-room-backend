@@ -3,7 +3,7 @@ import path from 'path';
 import sharp from 'sharp';
 import appConfig from '../../config/app.config';
 import { generateUUID } from '../../utlis';
-import { db } from '../db';
+import { db, setLogging } from '../db';
 import {
   readDir,
   writeFile,
@@ -22,8 +22,8 @@ export async function migrate() {
   //   path.join(appConfig.rootPath, 'local/traits'),
   //   (dirpath, filename) => `${dirpath}/${filename.replace('_', '-')}`
   // );
-  // migrateTraits();
-  migrateBears();
+  // await migrateTraits();
+  await migrateBears();
 }
 
 // ============================================================================
@@ -113,7 +113,7 @@ async function migrateTraits() {
             traitDependencyId != null
               ? {
                   create: {
-                    trait_id: traitDependencyId,
+                    depending_on_trait_id: traitDependencyId,
                   },
                 }
               : undefined,
@@ -149,21 +149,32 @@ async function migrateBears() {
 
     console.log({ row });
     for (const categoryKey of Object.keys(row)) {
-      const traitKey = row[categoryKey];
+      const traitKey = row[categoryKey]?.toLowerCase().replace(' ', '');
 
       if (traitKey != null) {
+        // setLogging(true);
+
         // https://github.com/prisma/prisma/discussions/3159
         const test = await db.$queryRaw<any[]>`
-      SELECT t.name AS trait_name, c.name AS category_name, l.index AS layer_index 
-      FROM "Trait" AS t
-      LEFT JOIN "Category" AS c
+      SELECT t.id AS "trait_id", t.name AS "trait_name", 
+      c.id AS "category_id", c.name AS "category_name", 
+      l.id AS "layer_id", l.index AS "layer_index",
+      dt.depending_on_trait_id
+      FROM "public"."Trait" AS t
+      LEFT JOIN "public"."Category" AS c
       ON t.category_id = c.id
-      LEFT JOIN "Layer" AS l
+      LEFT JOIN "public"."Layer" AS l
       ON c.layer_id = l.id
-      WHERE t.name = ${traitKey}
+      LEFT JOIN "public"."Dependent_Trait" AS dt
+      ON t.id = dt.trait_id
+      WHERE LOWER(t.name) LIKE ${`${traitKey}%`}
       AND c.name = ${categoryKey}
-      LIMIT 1
+      AND (
+        dt.depending_on_trait_id IS NULL
+        OR dt.depending_on_trait_id = '2dbbe83b-9434-4d76-b775-815adcb93114'
+      )
       `;
+
         console.log(`Result for ${bearName}:`, test);
       }
     }

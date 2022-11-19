@@ -2,8 +2,9 @@ import { PrismaClient } from '@prisma/client';
 import { STAGE } from '../../config';
 import appConfig from '../../config/app.config';
 
-export const { closeDB, connectDB, db } = (() => {
+export const { closeDB, connectDB, db, setLogging } = (() => {
   let db: PrismaClient | null = null;
+  let logging = false;
 
   function connectDB(): PrismaClient {
     if (db == null) {
@@ -19,10 +20,12 @@ export const { closeDB, connectDB, db } = (() => {
       });
       if (appConfig.stage === STAGE.LOCAL) {
         db.$on('query' as any, (e: any) => {
-          console.log(`Executed Query: `, e.query, {
-            params: e.params,
-            duration: e.duration + 'ms',
-          });
+          if (logging) {
+            console.log(`Executed Query: `, e.query, {
+              params: e.params,
+              duration: e.duration + 'ms',
+            });
+          }
         });
       }
     }
@@ -36,5 +39,9 @@ export const { closeDB, connectDB, db } = (() => {
     }
   }
 
-  return { closeDB, connectDB, db: db ?? connectDB() };
+  function setLogging(value: boolean) {
+    logging = value;
+  }
+
+  return { closeDB, connectDB, db: db ?? connectDB(), setLogging };
 })();

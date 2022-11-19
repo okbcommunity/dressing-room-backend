@@ -59,8 +59,8 @@ model Trait {
   image_url_png_2000x2000 String?
   image_url_png_512x512   String?
   bears                   Bear_Trait[]
-  depending_traits        Dependent_Trait[] @relation("depending") // Traits that depend on this Trait
-  depending_on_traits     Dependent_Trait[] @relation("depending_on") // Traits on which this Trait depends on
+  depending_traits        Dependent_Trait[] @relation("depending_on") // Traits that depend on this Trait
+  depending_on_traits     Dependent_Trait[] @relation("depending") // Traits on which this Trait depends on
   created_at              DateTime          @default(now())
   updated_at              DateTime          @updatedAt
 }
@@ -77,18 +77,18 @@ model Dependent_Trait {
 
 // Example
 // {
-//   id: Robot_Fur
-//   depending_traits: [Robot_Eye],
+//   id: Pink
+//   depending_traits: [Pink_Eye],
 //   depending_on_traits: []
 // }
 
 // {
-//   trait_id: Robot_Eye
-//   depending_on_id: Robot_Fur
+//   trait_id: Pink_Eye
+//   depending_on_id: Pink_Fur
 // }
 
 // {
-//   id: Robot_Eye
+//   id: Pink_Eye
 //   depending_traits: [],
-//   depending_on_traits: [Robot_Fur]
+//   depending_on_traits: [Pink_Fur]
 // }
