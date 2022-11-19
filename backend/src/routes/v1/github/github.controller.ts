@@ -1,7 +1,11 @@
-import { Request, Response } from 'express';
+import express from 'express';
 import { githubApp } from '../../../core';
 
-export async function githubWebhookController(req: Request, res: Response) {
+export async function githubWebhookController(
+  req: express.Request,
+  res: express.Response,
+  next: express.NextFunction
+) {
   try {
     const githubDeliveryHeaderKey = 'X-GitHub-Delivery';
     const githubDelivery =
@@ -25,14 +29,6 @@ export async function githubWebhookController(req: Request, res: Response) {
       typeof githubSignature === 'string' &&
       req.body != null
     ) {
-      // TODO REMOVE
-      console.log('verifyAndReceive', {
-        id: githubDelivery,
-        name: (req.body.action != null
-          ? `${githubEventName}.${req.body.action}`
-          : githubEventName) as any,
-      });
-
       // https://github.com/octokit/webhooks.js/#webhooksverifyandreceive
       await githubApp.webhooks.verifyAndReceive({
         id: githubDelivery,
@@ -44,11 +40,10 @@ export async function githubWebhookController(req: Request, res: Response) {
       });
     }
 
+    // Response
     res.sendStatus(200);
-  } catch (err) {
-    // TODO proper error handling
-    console.error(err);
+  } catch (err: any) {
+    next(err);
     githubApp.log.error(err as string);
-    res.sendStatus(500);
   }
 }

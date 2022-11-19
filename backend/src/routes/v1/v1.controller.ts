@@ -1,18 +1,25 @@
-import { Request, Response } from 'express';
+import express from 'express';
 import { STAGE } from '../../config';
 import appConfig from '../../config/app.config';
 import { migrate } from '../../core/migration';
+import { AppError } from '../../middleware/error';
 
-export async function migrateController(req: Request, res: Response) {
-  if (appConfig.stage === STAGE.LOCAL) {
-    try {
+export async function migrateController(
+  req: express.Request,
+  res: express.Response,
+  next: express.NextFunction
+) {
+  try {
+    if (appConfig.stage === STAGE.LOCAL) {
+      // Call migrate script
       await migrate();
+
+      // Response
       res.sendStatus(200);
-    } catch (err) {
-      console.error(err);
-      res.sendStatus(500);
+    } else {
+      throw new AppError(404);
     }
-  } else {
-    res.sendStatus(404);
+  } catch (err: any) {
+    next(err);
   }
 }

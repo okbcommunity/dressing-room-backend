@@ -481,9 +481,6 @@ components:
         error_description:
           type: string
           description: Long description of error message
-        request_id:
-          type: string
-          description: ID of the original request
         error_uri:
           type: string
           description: URI to detailed error description

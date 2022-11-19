@@ -36,11 +36,12 @@ export async function migrate() {
   // );
 
   // Migration
-  await migrateTraits();
-  await migrateBears();
+  // await migrateTraits();
+  // await migrateBears(300);
 
   // Test layering a Bear
-  await composeBear(326);
+  // await composeBear(202);
+  await composeBears(100);
 }
 
 // ============================================================================
@@ -144,7 +145,7 @@ async function migrateTraits() {
 // Migrate Bears (from CSV)
 // ============================================================================
 
-async function migrateBears() {
+async function migrateBears(until: number) {
   // Logging
   const timetaken = 'Time taken migrating Bears';
   console.log('--- Start migrating Bears ---');
@@ -154,7 +155,7 @@ async function migrateBears() {
   const file = await readFile(
     path.join(appConfig.rootPath, 'local/bear_attributes.csv')
   );
-  const parsedData = parseCSVFile(file, ',');
+  const parsedData = parseCSVFile(file, ',').slice(0, until);
 
   for (const row of parsedData) {
     const bearId = generateUUID();
@@ -419,6 +420,12 @@ async function queryTraitInformation(
       `;
 
   return response.length >= 1 ? response[0] : null;
+}
+
+async function composeBears(until: number) {
+  for (let i = 1; i < until; i++) {
+    await composeBear(i);
+  }
 }
 
 async function composeBear(index: number) {
