@@ -22,7 +22,6 @@ export async function migrate() {
   //   path.join(appConfig.rootPath, 'local/traits'),
   //   (dirpath, filename) => `${dirpath}/${filename.replace('_', '-')}`
   // );
-
   // migrateTraits();
   migrateBears();
 }
@@ -120,6 +119,8 @@ async function migrateTraits() {
               : undefined,
         },
       });
+
+      console.log(`Processed: '${traitName}'`);
     }
   }
 
@@ -136,11 +137,37 @@ async function migrateBears() {
   // TODO Read Bears from '.csv. file
   // TODO Add Bears to database and assign specified Attributes
 
+  // Read CSV Data
   const file = await readFile(
     path.join(appConfig.rootPath, 'local/bear_attributes.csv')
   );
-  const parsedData = parseCSVFile(file, ',');
-  console.log(parsedData);
+  const parsedData = parseCSVFile(file, ',').slice(0, 1);
+
+  for (const row of parsedData) {
+    const bearName = row['Name'];
+    delete row['Name'];
+
+    console.log({ row });
+    for (const categoryKey of Object.keys(row)) {
+      const traitKey = row[categoryKey];
+
+      if (traitKey != null) {
+        // https://github.com/prisma/prisma/discussions/3159
+        const test = await db.$queryRaw<any[]>`
+      SELECT t.name AS trait_name, c.name AS category_name, l.index AS layer_index 
+      FROM "Trait" AS t
+      LEFT JOIN "Category" AS c
+      ON t.category_id = c.id
+      LEFT JOIN "Layer" AS l
+      ON c.layer_id = l.id
+      WHERE t.name = ${traitKey}
+      AND c.name = ${categoryKey}
+      LIMIT 1
+      `;
+        console.log(`Result for ${bearName}:`, test);
+      }
+    }
+  }
 }
 
 // ============================================================================
@@ -191,8 +218,6 @@ function formatTraitName(
   } catch (err) {
     console.error(`Failed to parse Trait Name '${name}'!`);
   }
-
-  console.log({ parts, newName });
 
   return {
     dependency,

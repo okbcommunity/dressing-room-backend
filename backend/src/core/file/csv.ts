@@ -1,14 +1,14 @@
 export function parseCSVFile(
   file: Buffer,
   separator = ';'
-): Record<string, string>[] {
+): Record<string, string | null>[] {
   return parseCSVFileContent(file.toString('utf-8'), separator);
 }
 
 function parseCSVFileContent(
   fileContentAsText: string,
   separator = ';'
-): Record<string, string>[] {
+): Record<string, string | null>[] {
   // Extract CSV rows
   const rows = fileContentAsText.split('\n');
 
@@ -21,12 +21,16 @@ function parseCSVFileContent(
 
   // Extract Rows
   const csvArray = rows.map((row) => {
-    const rowObject: Record<string, string> = {};
+    const rowObject: Record<string, string | null> = {};
     const values = row.split(separator);
 
     // Map row values into an object with the extracted header keys
     values.map((value, i) => {
       rowObject[headers[i]] = value.replace('\r', '');
+      // Replace empty column with 'null'
+      if (rowObject[headers[i]] === '') {
+        rowObject[headers[i]] = null;
+      }
     });
 
     return rowObject;
