@@ -9,6 +9,7 @@ export async function migrateController(req: Request, res: Response) {
       await migrate();
       res.sendStatus(200);
     } catch (err) {
+      console.error(err);
       res.sendStatus(500);
     }
   } else {

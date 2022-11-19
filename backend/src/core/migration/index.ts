@@ -1,4 +1,4 @@
-import { Trait } from '@prisma/client';
+import { prisma, Trait } from '@prisma/client';
 import path from 'path';
 import sharp from 'sharp';
 import appConfig from '../../config/app.config';
@@ -22,8 +22,12 @@ export async function migrate() {
   //   path.join(appConfig.rootPath, 'local/traits'),
   //   (dirpath, filename) => `${dirpath}/${filename.replace('_', '-')}`
   // );
+  // Migration
   // await migrateTraits();
-  await migrateBears();
+  // await migrateBears();
+
+  // Test layering a Bear
+  await generateBear(7227);
 }
 
 // ============================================================================
@@ -134,51 +138,64 @@ async function migrateTraits() {
 // ============================================================================
 
 async function migrateBears() {
-  // TODO Read Bears from '.csv. file
-  // TODO Add Bears to database and assign specified Attributes
+  // Logging
+  const timetaken = 'Time taken migrating Bears';
+  console.log('--- Start migrating Bears ---');
+  console.time(timetaken);
 
   // Read CSV Data
   const file = await readFile(
     path.join(appConfig.rootPath, 'local/bear_attributes.csv')
   );
-  const parsedData = parseCSVFile(file, ',').slice(0, 1);
+  const parsedData = parseCSVFile(file, ',');
 
   for (const row of parsedData) {
-    const bearName = row['Name'];
+    const bearId = generateUUID();
+    // Extract Bear Index at Colum 'Name' before processing Traits
+    const bearIndex = row['Name'] != null ? +row['Name'] : -1;
     delete row['Name'];
 
-    console.log({ row });
+    // Retreive corresponding Traits form the Database
+    const traits: Record<string, TQueryTraitInformationResponse | null> = {};
     for (const categoryKey of Object.keys(row)) {
-      const traitKey = row[categoryKey]?.toLowerCase().replace(' ', '');
-
+      const traitKey = row[categoryKey];
       if (traitKey != null) {
-        // setLogging(true);
-
-        // https://github.com/prisma/prisma/discussions/3159
-        const test = await db.$queryRaw<any[]>`
-      SELECT t.id AS "trait_id", t.name AS "trait_name", 
-      c.id AS "category_id", c.name AS "category_name", 
-      l.id AS "layer_id", l.index AS "layer_index",
-      dt.depending_on_trait_id
-      FROM "public"."Trait" AS t
-      LEFT JOIN "public"."Category" AS c
-      ON t.category_id = c.id
-      LEFT JOIN "public"."Layer" AS l
-      ON c.layer_id = l.id
-      LEFT JOIN "public"."Dependent_Trait" AS dt
-      ON t.id = dt.trait_id
-      WHERE LOWER(t.name) LIKE ${`${traitKey}%`}
-      AND c.name = ${categoryKey}
-      AND (
-        dt.depending_on_trait_id IS NULL
-        OR dt.depending_on_trait_id = '2dbbe83b-9434-4d76-b775-815adcb93114'
-      )
-      `;
-
-        console.log(`Result for ${bearName}:`, test);
+        traits[categoryKey] = await queryTraitInformation(
+          traitKey,
+          categoryKey,
+          traits['Fur']?.traitId
+        );
       }
     }
+
+    // Create new Bear Entry in the Database
+    await db.bear.create({
+      data: {
+        id: bearId,
+        number: bearIndex,
+      },
+    });
+
+    // Connect Bear Entry with corresponding Traits
+    for (const traitKey of Object.keys(traits)) {
+      const trait = traits[traitKey];
+      if (trait != null) {
+        await db.bear_Trait.create({
+          data: {
+            layer_id: trait.layerId,
+            bear_id: bearId,
+            trait_id: trait.traitId,
+          },
+        });
+      }
+    }
+
+    console.log(`Processed: '${bearIndex}'`, { traits });
   }
+
+  // Logging
+  console.timeEnd(timetaken);
+  console.log('--- End migrating Bears ---');
 }
 
 // ============================================================================
@@ -204,7 +221,7 @@ function formatTraitName(
       // Remove or replace not required Chars
       newName = newName
         .toLowerCase()
-        .replace(categoryName.toLowerCase(), '') // Replace Category Name (e.g. fur_happy.png -> _happy.png)
+        .replace(new RegExp(`/^(${categoryName.toLowerCase()})/`), '') // Replace Category Name (e.g. fur_happy.png -> _happy.png)
         .replace(spaceChar, ' ')
         .replace(/[^a-zA-Z ]/g, '') // Replace any special Char
         .trim();
@@ -357,6 +374,77 @@ async function findTraitByName(name: string): Promise<Trait | null> {
   });
 }
 
+async function queryTraitInformation(
+  traitKey: string,
+  categoryKey: string,
+  furId = 'unknown'
+): Promise<TQueryTraitInformationResponse | null> {
+  // In the .csv Trait Names are specified as e.g. 'Army Hat' but in the DB as 'Armyhat'
+  traitKey = traitKey.toLowerCase()?.replace(' ', '');
+
+  // For debugging
+  // setLogging(true);
+
+  // https://github.com/prisma/prisma/discussions/3159
+  // Note: '{value}' is for Values (but only hard coded!!)
+  //   and "{name}" is for Table or Column Names
+  const response = await db.$queryRaw<TQueryTraitInformationResponse[]>`
+      SELECT t.id AS "traitId", t.name AS "traitName", 
+      c.id AS "categoryId", c.name AS "categoryName", 
+      l.id AS "layerId", l.index AS "layerIndex",
+      dt.depending_on_trait_id
+      FROM "public"."Trait" AS t
+      LEFT JOIN "public"."Category" AS c
+      ON t.category_id = c.id
+      LEFT JOIN "public"."Layer" AS l
+      ON c.layer_id = l.id
+      LEFT JOIN "public"."Dependent_Trait" AS dt
+      ON t.id = dt.trait_id
+      WHERE LOWER(t.name) LIKE ${`${traitKey}%`}
+      AND c.name = ${categoryKey}
+      AND (
+        dt.depending_on_trait_id IS NULL
+        OR dt.depending_on_trait_id = ${furId}
+      )
+      `;
+
+  return response.length >= 1 ? response[0] : null;
+}
+
+async function generateBear(index: number) {
+  // Logging
+  const timetaken = 'Time taken generating Bear';
+  console.log('--- Start generating Bear ---');
+  console.time(timetaken);
+
+  // Query Bear
+  const bear = await db.bear.findFirst({
+    where: {
+      number: index,
+    },
+  });
+
+  if (bear != null) {
+    // Query Traits
+    const traits = await db.trait.findMany({
+      where: {
+        bears: {
+          some: {
+            bear_id: bear.id,
+          },
+        },
+      },
+    });
+
+    // Generate Asset
+    console.log(`Generate Asset for Bear ${bear.number}`, { bear, traits });
+  }
+
+  // Logging
+  console.timeEnd(timetaken);
+  console.log('--- End generating Bear ---');
+}
+
 type TTraitAssetVariants = {
   png2000x2000: Buffer | null;
   png512x512: Buffer | null;
@@ -367,4 +455,13 @@ type TTraitAssetVariantPaths = {
   png2000x2000: string | null;
   png512x512: string | null;
   webp: string | null;
+};
+
+type TQueryTraitInformationResponse = {
+  traitId: string;
+  traitName: string;
+  categoryId: string;
+  categoryName: string;
+  layerId: string;
+  layerIndex: string;
 };
