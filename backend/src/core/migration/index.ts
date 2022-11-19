@@ -1,6 +1,6 @@
-import { prisma, Trait } from '@prisma/client';
+import { Trait } from '@prisma/client';
 import path from 'path';
-import sharp from 'sharp';
+import sharp, { OverlayOptions } from 'sharp';
 import appConfig from '../../config/app.config';
 import { generateUUID } from '../../utlis';
 import { db, setLogging } from '../db';
@@ -27,7 +27,7 @@ export async function migrate() {
   // await migrateBears();
 
   // Test layering a Bear
-  await generateBear(7227);
+  await composeBear(7227);
 }
 
 // ============================================================================
@@ -411,7 +411,7 @@ async function queryTraitInformation(
   return response.length >= 1 ? response[0] : null;
 }
 
-async function generateBear(index: number) {
+async function composeBear(index: number) {
   // Logging
   const timetaken = 'Time taken generating Bear';
   console.log('--- Start generating Bear ---');
@@ -434,9 +434,59 @@ async function generateBear(index: number) {
           },
         },
       },
+      select: {
+        id: true,
+        name: true,
+        image_url_png_2000x2000: true,
+        image_url_png_512x512: true,
+        image_url_webp: true,
+        category: {
+          select: {
+            layer: {
+              select: {
+                index: true,
+              },
+            },
+          },
+        },
+      },
     });
 
-    // Generate Asset
+    // Order Traits based on layer index
+    const orderedTraits = traits.sort(
+      (a, b) => a.category.layer.index - b.category.layer.index
+    );
+
+    // Generate composed Bear
+    if (orderedTraits.length > 0) {
+      // Read composable Trait Assets
+      const composableTraits: OverlayOptions[] = [];
+      for (const trait of orderedTraits) {
+        if (trait.image_url_png_2000x2000 != null) {
+          const buffer = await readFile(trait.image_url_png_2000x2000);
+          composableTraits.push({ input: buffer });
+        }
+      }
+
+      // Compose Bear based on Trait Assets
+      if (composableTraits.length >= 1) {
+        const composedBear = await sharp(
+          composableTraits.shift()?.input as Buffer
+        )
+          .png()
+          .composite(composableTraits)
+          .toBuffer();
+
+        // Save composed Bear
+        await writeFile(
+          `${path.join(appConfig.rootPath, `local/generated`)}/${
+            bear.number
+          }.png`,
+          composedBear
+        );
+      }
+    }
+
     console.log(`Generate Asset for Bear ${bear.number}`, { bear, traits });
   }
 
