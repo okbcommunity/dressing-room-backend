@@ -17,5 +17,6 @@ module.exports = {
     'no-console': WARNING,
     'no-var': ERROR,
     '@typescript-eslint/no-empty-function': WARNING,
+    'prefer-const': WARNING,
   },
 };

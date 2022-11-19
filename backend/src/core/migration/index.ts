@@ -15,19 +15,32 @@ import {
 const spaceChar = '_';
 const chainChar = '-';
 
+const pathToTraitsFolder = path.join(appConfig.rootPath, 'local/traits');
+const pathToParsedTraitsFolder = path.join(
+  appConfig.rootPath,
+  'local/parsedTraits'
+);
+const pathToGeneratedBearTests = path.join(
+  appConfig.rootPath,
+  'local/generated'
+);
+
+const fast = true;
+
 // Inital run to migrate all Trait Assets into the Database
 // and to the Image Provider of choice
 export async function migrate() {
   // renameFilesDeep(
   //   path.join(appConfig.rootPath, 'local/traits'),
-  //   (dirpath, filename) => `${dirpath}/${filename.replace('_', '-')}`
+  //   (dirpath, filename) => `${dirpath}/${filename.replaceAll('_', '-')}`
   // );
+
   // Migration
-  // await migrateTraits();
-  // await migrateBears();
+  await migrateTraits();
+  await migrateBears();
 
   // Test layering a Bear
-  await composeBear(7227);
+  await composeBear(326);
 }
 
 // ============================================================================
@@ -39,12 +52,6 @@ async function migrateTraits() {
   const timetaken = 'Time taken migrating Categories and Traits';
   console.log('--- Start migrating Traits ---');
   console.time(timetaken);
-
-  const pathToTraitsFolder = path.join(appConfig.rootPath, 'local/traits');
-  const pathToParsedTraitsFolder = path.join(
-    appConfig.rootPath,
-    'local/parsedTraits'
-  );
 
   // Read Traits directory containing Traits Assets in Category directories
   const categoryDirKeys = await readDir(pathToTraitsFolder);
@@ -147,7 +154,7 @@ async function migrateBears() {
   const file = await readFile(
     path.join(appConfig.rootPath, 'local/bear_attributes.csv')
   );
-  const parsedData = parseCSVFile(file, ',');
+  const parsedData = parseCSVFile(file, ',').slice(0, 500); // TODO REMOVE slice
 
   for (const row of parsedData) {
     const bearId = generateUUID();
@@ -155,7 +162,7 @@ async function migrateBears() {
     const bearIndex = row['Name'] != null ? +row['Name'] : -1;
     delete row['Name'];
 
-    // Retreive corresponding Traits form the Database
+    // Retrieve corresponding Traits form the Database
     const traits: Record<string, TQueryTraitInformationResponse | null> = {};
     for (const categoryKey of Object.keys(row)) {
       const traitKey = row[categoryKey];
@@ -172,7 +179,7 @@ async function migrateBears() {
     await db.bear.create({
       data: {
         id: bearId,
-        number: bearIndex,
+        index: bearIndex,
       },
     });
 
@@ -190,7 +197,7 @@ async function migrateBears() {
       }
     }
 
-    console.log(`Processed: '${bearIndex}'`, { traits });
+    console.log(`Processed: '${bearIndex}'`);
   }
 
   // Logging
@@ -297,10 +304,13 @@ async function generateTraitAssetVariants(
   let png2000x2000 = null;
   let png512x512 = null;
   let webp = null;
+
   try {
     png2000x2000 = traitAsset;
-    png512x512 = await sharp(traitAsset).resize(512, 512).toBuffer();
-    webp = await sharp(traitAsset).webp().toBuffer();
+    if (!fast) {
+      png512x512 = await sharp(traitAsset).resize(512, 512).toBuffer();
+      webp = await sharp(traitAsset).webp().toBuffer();
+    }
   } catch (err) {
     console.error(
       `Failed to convert Trait Asset '${name}' in specified variants!`
@@ -380,7 +390,7 @@ async function queryTraitInformation(
   furId = 'unknown'
 ): Promise<TQueryTraitInformationResponse | null> {
   // In the .csv Trait Names are specified as e.g. 'Army Hat' but in the DB as 'Armyhat'
-  traitKey = traitKey.toLowerCase()?.replace(' ', '');
+  traitKey = traitKey.toLowerCase().replace(/ /g, '');
 
   // For debugging
   // setLogging(true);
@@ -420,38 +430,13 @@ async function composeBear(index: number) {
   // Query Bear
   const bear = await db.bear.findFirst({
     where: {
-      number: index,
+      index,
     },
   });
 
   if (bear != null) {
     // Query Traits
-    const traits = await db.trait.findMany({
-      where: {
-        bears: {
-          some: {
-            bear_id: bear.id,
-          },
-        },
-      },
-      select: {
-        id: true,
-        name: true,
-        image_url_png_2000x2000: true,
-        image_url_png_512x512: true,
-        image_url_webp: true,
-        category: {
-          select: {
-            layer: {
-              select: {
-                index: true,
-              },
-            },
-          },
-        },
-      },
-    });
-
+    const traits = await findTraitsByBearId(bear.id);
     // Order Traits based on layer index
     const orderedTraits = traits.sort(
       (a, b) => a.category.layer.index - b.category.layer.index
@@ -479,20 +464,46 @@ async function composeBear(index: number) {
 
         // Save composed Bear
         await writeFile(
-          `${path.join(appConfig.rootPath, `local/generated`)}/${
-            bear.number
-          }.png`,
+          `${pathToGeneratedBearTests}/${bear.index}.png`,
           composedBear
         );
       }
     }
 
-    console.log(`Generate Asset for Bear ${bear.number}`, { bear, traits });
+    console.log(`Generated Asset for Bear '${bear.index}'`, { bear, traits });
   }
 
   // Logging
   console.timeEnd(timetaken);
   console.log('--- End generating Bear ---');
+}
+
+async function findTraitsByBearId(bearId: string) {
+  return db.trait.findMany({
+    where: {
+      bears: {
+        some: {
+          bear_id: bearId,
+        },
+      },
+    },
+    select: {
+      id: true,
+      name: true,
+      image_url_png_2000x2000: true,
+      image_url_png_512x512: true,
+      image_url_webp: true,
+      category: {
+        select: {
+          layer: {
+            select: {
+              index: true,
+            },
+          },
+        },
+      },
+    },
+  });
 }
 
 type TTraitAssetVariants = {

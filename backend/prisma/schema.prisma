@@ -16,7 +16,7 @@ datasource db {
 
 model Bear {
   id         String       @id @default(uuid())
-  number     Int          @unique
+  index      Int          @unique
   public_key String?      @unique
   traits     Bear_Trait[]
 }
