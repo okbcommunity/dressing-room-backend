@@ -154,7 +154,7 @@ async function migrateBears() {
   const file = await readFile(
     path.join(appConfig.rootPath, 'local/bear_attributes.csv')
   );
-  const parsedData = parseCSVFile(file, ',').slice(0, 500); // TODO REMOVE slice
+  const parsedData = parseCSVFile(file, ',');
 
   for (const row of parsedData) {
     const bearId = generateUUID();

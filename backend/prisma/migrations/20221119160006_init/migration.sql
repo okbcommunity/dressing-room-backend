@@ -1,7 +1,7 @@
 -- CreateTable
 CREATE TABLE "Bear" (
     "id" TEXT NOT NULL,
-    "number" INTEGER NOT NULL,
+    "index" INTEGER NOT NULL,
     "public_key" TEXT,
 
     CONSTRAINT "Bear_pkey" PRIMARY KEY ("id")
@@ -58,7 +58,7 @@ CREATE TABLE "Dependent_Trait" (
 );
 
 -- CreateIndex
-CREATE UNIQUE INDEX "Bear_number_key" ON "Bear"("number");
+CREATE UNIQUE INDEX "Bear_index_key" ON "Bear"("index");
 
 -- CreateIndex
 CREATE UNIQUE INDEX "Bear_public_key_key" ON "Bear"("public_key");
