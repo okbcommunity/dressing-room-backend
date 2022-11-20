@@ -11,8 +11,12 @@
     "lint": "eslint --cache \"**/*.{js,ts}\"",
     "test": "echo \"Error: no test specified\" && exit 1",
     "install:clean": "shx rm -rf dist && rm -rf node_modules && pnpm install",
+    "dc:build": "docker-compose build --progress=plain --no-cache",
     "dc:up": "docker-compose up --build -d",
     "dc:down": "docker-compose down",
+    "d:build": "docker build -t bennodev19/okbcommunity-dressing-room-backend:latest .",
+    "d:push": "docker push bennodev19/okbcommunity-dressing-room-backend",
+    "d:release": "npm version patch && pnpm run d:build && pnpm run d:push",
     "pr:studio": "npx prisma studio"
   },
   "keywords": [],

@@ -1,6 +1,29 @@
 version: '3.9'
 
 services:
+  backend:
+    # Name of the Container (by default the 'services' name)
+    container_name: 'okbcommunit-dressing-room-backend'
+
+    # Build 'backend' Container using the 'Dockerfile'
+    build: .
+
+    # Always restart the Container (in the case of a crash or a system reboot
+    restart: always
+
+    # Only starting this Container once the 'db' service finished starting up
+    depends_on:
+      - db
+
+    # Expose internal port 9000 at external port 5000.
+    # When we expose a port, it allows us to access the backend via 'localhost:5000'
+    ports:
+      - '5000:9000'
+
+    # Environment Variables
+    env_file:
+      - .env
+
   db:
     # Name of the Container (by default the 'services' name)
     # Can be used to connect to this container from another container
@@ -19,7 +42,7 @@ services:
     # The syntax to do so is [port we need to connect to externally]:[port we want to retrieve in the container]
     # https://docs.docker.com/compose/networking/
     ports:
-      - '5001:5432' 
+      - '5001:5432'
 
     # The `volumes` tag allows us to share a folder with our Container.
     # Its syntax is as follows: [folder path on our machine]:[folder path to retrieve in the container]

@@ -9,5 +9,11 @@ export function setupGithubWebhookDevRedirect(): () => void {
     logger: console,
   });
   const githubEvents = githubSmee.start();
-  return githubEvents.close;
+  return () => {
+    // https://github.com/probot/smee-client/blob/master/index.ts
+    if (githubEvents.close != null) {
+      githubEvents.close();
+    }
+    console.log('Closed Github Smee Connection.');
+  };
 }

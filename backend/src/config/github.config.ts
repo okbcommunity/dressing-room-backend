@@ -10,6 +10,8 @@ export default {
     name: 'okb-community-app',
     privateKey: appPrivateKey.replace(/\\n/gm, '\n'), // https://github.com/octokit/app.js/issues/262
   },
+
+  // Repository
   repo: {
     owner: 'okbcommunity',
     name: 'dressing-room-cms',

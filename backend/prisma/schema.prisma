@@ -27,15 +27,14 @@ model Bear_Trait {
   bear_id  String
   trait    Trait  @relation(fields: [trait_id], references: [id])
   trait_id String
-  layer    Layer  @relation(fields: [layer_id], references: [id])
-  layer_id String
 
-  @@id([bear_id, layer_id])
+  @@id([bear_id, trait_id])
 }
 
 model Category {
   id         String   @id @default(uuid())
   name       String
+  slug       String
   layer      Layer    @relation(fields: [layer_id], references: [id])
   layer_id   String
   traits     Trait[]
@@ -44,29 +43,47 @@ model Category {
 }
 
 model Layer {
-  id         String       @id @default(uuid())
-  index      Int          @unique
-  Category   Category[]
-  Bear_Trait Bear_Trait[]
+  id       String     @id @default(uuid())
+  index    Int        @unique
+  Category Category[]
+  Trait    Trait[]
 }
 
 model Trait {
-  id                      String            @id @default(uuid())
+  id                      String              @id @default(uuid())
   name                    String
+  slug                    String
   category_id             String
-  category                Category          @relation(fields: [category_id], references: [id])
+  category                Category            @relation(fields: [category_id], references: [id])
+  layer_id                String?
+  layer                   Layer?              @relation(fields: [layer_id], references: [id])
   image_url_webp          String?
   image_url_png_2000x2000 String?
   image_url_png_512x512   String?
   bears                   Bear_Trait[]
-  depending_traits        Dependent_Trait[] @relation("depending_on") // Traits that depend on this Trait
-  depending_on_traits     Dependent_Trait[] @relation("depending") // Traits on which this Trait depends on
-  created_at              DateTime          @default(now())
-  updated_at              DateTime          @updatedAt
+  variant_traits          Trait_Variant[]     @relation("variant_of")
+  variant_of_traits       Trait_Variant[]     @relation("variant")
+  depending_traits        Trait_Dependency[]  @relation("depending_on") // Traits that depend on this Trait
+  depending_on_traits     Trait_Dependency[]  @relation("depending") // Traits on which this Trait depends on
+  combined_traits         Trait_Combination[] @relation("combined_with")
+  combined_with_traits    Trait_Combination[] @relation("combined")
+  created_at              DateTime            @default(now())
+  updated_at              DateTime            @updatedAt
+}
+
+model Trait_Variant {
+  trait               Trait  @relation("variant", fields: [trait_id], references: [id])
+  trait_id            String
+  variant_of_trait    Trait  @relation("variant_of", fields: [variant_of_trait_id], references: [id])
+  variant_of_trait_id String
+  name                String
+  slug                String
+
+  @@id([trait_id, variant_of_trait_id])
 }
 
 // https://stackoverflow.com/questions/35783630/many-to-many-self-referencing-relationship
-model Dependent_Trait {
+model Trait_Dependency {
   trait                 Trait  @relation("depending", fields: [trait_id], references: [id])
   trait_id              String
   depending_on_trait    Trait  @relation("depending_on", fields: [depending_on_trait_id], references: [id])
@@ -75,20 +92,11 @@ model Dependent_Trait {
   @@id([trait_id, depending_on_trait_id])
 }
 
-// Example
-// {
-//   id: Pink
-//   depending_traits: [Pink_Eye],
-//   depending_on_traits: []
-// }
+model Trait_Combination {
+  trait                 Trait  @relation("combined", fields: [trait_id], references: [id])
+  trait_id              String
+  combined_with_trait   Trait  @relation("combined_with", fields: [combined_with_trai_id], references: [id])
+  combined_with_trai_id String
 
-// {
-//   trait_id: Pink_Eye
-//   depending_on_id: Pink_Fur
-// }
-
-// {
-//   id: Pink_Eye
-//   depending_traits: [],
-//   depending_on_traits: [Pink_Fur]
-// }
+  @@id([trait_id, combined_with_trai_id])
+}
