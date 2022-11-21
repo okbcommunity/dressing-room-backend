@@ -5,9 +5,6 @@ import { db } from '../../db';
 import { readDir, readFilesFromDir, writeFile } from '../../file';
 import { config } from './config';
 
-// TODO
-// Fix Slug - 'okayandean' should be 'okay_andean'
-
 // ============================================================================
 // Migrate Traits (from Traits Asset Folder)
 // ============================================================================
@@ -26,7 +23,7 @@ export async function migrateTraitsFolder() {
     id: string;
     slug: string;
     dependencies: string[];
-    variant: string | null;
+    variantOf: string | null;
   }[] = [];
 
   for (const categoryDirKey of categoryDirKeys) {
@@ -95,7 +92,8 @@ export async function migrateTraitsFolder() {
         specifiedLayerId = await getOrCreateLayer(traitOptions.layer);
       }
 
-      // Add
+      // Add possible relations to 'toResolveTraitRelations' to resolve them
+      // as soon as all Traits were migrated (-> Trait doesn't depend on Trait that wasn't migrated yet)
       if (
         traitOptions.dependencies.length > 0 ||
         traitOptions.variant != null
@@ -104,11 +102,11 @@ export async function migrateTraitsFolder() {
           id: traitId,
           slug: traitSlug,
           dependencies: traitOptions.dependencies,
-          variant: traitOptions.variant,
+          variantOf: traitOptions.variantOf,
         });
       }
 
-      // Create different variants of the Trait Asset
+      // Create different Image Variants of the Trait Asset
       const traitAssetVariants = await generateTraitAssetVariants(
         traitAsset,
         traitName
@@ -141,10 +139,8 @@ export async function migrateTraitsFolder() {
     }
   }
 
-  console.log(toResolveTraitRelations.slice(0, 5)); // TODO
-
   // Create Relations between Traits
-  for (const relation of toResolveTraitRelations.slice(0, 5)) {
+  for (const relation of toResolveTraitRelations) {
     // Query Trait dependencies
     const dependencyTraitIds: string[] = [];
     for (const dependency of relation.dependencies) {
@@ -157,17 +153,16 @@ export async function migrateTraitsFolder() {
 
     // Query Variant Parent
     let variantParentTraitId: string | null = null;
-    if (relation.variant != null) {
-      console.log('----Variant', relation.variant);
-      const trait = await findTraitBySlug(relation.variant);
+    if (relation.variantOf != null) {
+      const trait = await findTraitBySlug(relation.variantOf);
       const traitId = trait?.id;
+      console.log('----Variant', relation.variantOf, traitId);
       if (traitId != null) {
         variantParentTraitId = traitId;
       }
     }
 
     // Update DB Trait Entry
-    // TODO I guess it creates it twice
     await db.trait.update({
       where: {
         id: relation.id,
@@ -186,11 +181,11 @@ export async function migrateTraitsFolder() {
             ? {
                 create: {
                   variant_of_trait_id: variantParentTraitId,
-                  name: `${relation.variant?.replace(
+                  name: `${relation.variantOf?.replace(
                     config.separator.space,
                     ' '
                   )}`, // TODO format Name
-                  slug: `${relation.variant}${config.separator.chain}${relation.slug}`,
+                  slug: `${relation.variantOf}${config.separator.chain}${relation.slug}`,
                 },
               }
             : undefined,
@@ -221,6 +216,7 @@ function formatName(name: string): {
   let newName = chainParts.shift() ?? name;
   const options: TChainedNameOptions = {
     variant: null,
+    variantOf: null,
     dependencies: [],
     layer: null,
     category: null,
@@ -236,6 +232,9 @@ function formatName(name: string): {
         // Handle Variant
         if (chainIdentifier === 'v' && options.variant == null) {
           options.variant = chainValue;
+          options.variantOf = newName
+            .toLowerCase()
+            .replace(' ', config.separator.space);
         }
 
         // Handle Dependency
@@ -257,8 +256,12 @@ function formatName(name: string): {
       }
     }
 
-    // Add relevant Chain Parts to Display Name
+    // Add relevant Chain Parts back to Display Name
     newName = `${newName}${
+      options.variant != null
+        ? `${config.separator.space}${options.variant}`
+        : ''
+    }${
       options.dependencies[0] != null
         ? `${config.separator.space}${options.dependencies[0]}`
         : ''
@@ -406,6 +409,7 @@ type TTraitAssetVariantPaths = {
 
 type TChainedNameOptions = {
   variant: string | null;
+  variantOf: string | null;
   dependencies: string[];
   layer: number | null;
   category: string | null;
