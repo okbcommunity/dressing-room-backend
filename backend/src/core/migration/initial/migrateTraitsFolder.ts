@@ -24,6 +24,7 @@ export async function migrateTraitsFolder() {
     slug: string;
     dependencies: string[];
     variantOf: string | null;
+    variant: string | null;
   }[] = [];
 
   for (const categoryDirKey of categoryDirKeys) {
@@ -103,6 +104,7 @@ export async function migrateTraitsFolder() {
           slug: traitSlug,
           dependencies: traitOptions.dependencies,
           variantOf: traitOptions.variantOf,
+          variant: traitOptions.variant,
         });
       }
 
@@ -156,7 +158,6 @@ export async function migrateTraitsFolder() {
     if (relation.variantOf != null) {
       const trait = await findTraitBySlug(relation.variantOf);
       const traitId = trait?.id;
-      console.log('----Variant', relation.variantOf, traitId);
       if (traitId != null) {
         variantParentTraitId = traitId;
       }
@@ -181,11 +182,11 @@ export async function migrateTraitsFolder() {
             ? {
                 create: {
                   variant_of_trait_id: variantParentTraitId,
-                  name: `${relation.variantOf?.replace(
+                  name: `${relation.variant?.replace(
                     config.separator.space,
                     ' '
                   )}`, // TODO format Name
-                  slug: `${relation.variantOf}${config.separator.chain}${relation.slug}`,
+                  slug: `${relation.variant}${config.separator.chain}${relation.slug}`, // e.g. 'noears_lofi-noears'
                 },
               }
             : undefined,
