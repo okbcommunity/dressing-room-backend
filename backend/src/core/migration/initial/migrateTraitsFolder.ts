@@ -146,30 +146,42 @@ export async function migrateTraitsFolder() {
     // Query Trait dependencies
     const dependencyTraitIds: string[] = [];
     for (const dependency of relation.dependencies) {
-      let dependencySlug = '';
       if (typeof dependency === 'string') {
-        dependencySlug = dependency;
+        const trait = await findTraitBySlug(dependency);
+        const traitId = trait?.id;
+        if (traitId != null) {
+          dependencyTraitIds.push(traitId);
+        }
       } else {
-        // const example = {
-        //   variant: null,
-        //   variantOf: null,
-        //   dependencies: [
-        //     {
-        //       name: 'Fur Noears',
-        //       slug: 'fur-noears',
-        //       variant: 'noears',
-        //       variantOf: 'fur',
-        //     },
-        //   ],
-        //   layer: null,
-        //   category: null,
-        // };
-        // TODO find deep dependency with variant option
-      }
-      const trait = await findTraitBySlug(dependencySlug);
-      const traitId = trait?.id;
-      if (traitId != null) {
-        dependencyTraitIds.push(traitId);
+        // blackbuckethat_d+(fur_v+noears).png
+        // {
+        //   name: 'Fur Noears',
+        //   slug: 'fur-noears',
+        //   variant: 'noears',
+        //   variantOf: 'fur',
+        // },
+
+        // Find all Variants that match the criteria
+        const traitVariants = await db.trait_Variant.findMany({
+          where: {
+            slug: {
+              equals: dependency.variant ?? 'unknown',
+            },
+            trait: {
+              category: {
+                slug: {
+                  equals: dependency.variantOf ?? 'unknown',
+                },
+              },
+            },
+          },
+          select: {
+            trait_id: true,
+          },
+        });
+        for (const traitVariant of traitVariants) {
+          dependencyTraitIds.push(traitVariant.trait_id);
+        }
       }
     }
 
@@ -203,7 +215,7 @@ export async function migrateTraitsFolder() {
                 create: {
                   variant_of_trait_id: variantParentTraitId,
                   name: formatName(`${relation.variant} ${relation.variantOf}`),
-                  slug: `${relation.variant}${config.separator.chain}${relation.slug}`, // e.g. 'noears_lofi-noears'
+                  slug: relation.variant ?? 'unknown',
                 },
               }
             : undefined,
