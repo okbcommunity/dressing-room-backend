@@ -26,6 +26,8 @@ export const config = {
     space: '-',
     chain: '_',
     chainType: '+',
+    deepChainStart: '(',
+    deepChainEnd: ')',
   },
 
   path: {

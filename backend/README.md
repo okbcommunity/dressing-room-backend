@@ -116,3 +116,34 @@ can create e.g. Comments in their name.
 ### How des Node.js handle 10k concurrent requests?
 
 - [Stackoverflow](https://stackoverflow.com/questions/34855352/how-in-general-does-node-js-handle-10-000-concurrent-requests)
+
+---
+
+### Stringified regexp doesn't work when parsed with `new RegExp()`
+
+- [Typescript Playground](https://www.typescriptlang.org/play?#code/ATBQIYwewOwZwC7BgUwO4DkCGBbFwBeYAIgCMAbLCAa1IFcaUEALLBAegqtoeqdYQB9ACYBqABQAzOgCdBAN1EwoKLDLgBKAHQAHGAHNiAbnDBo8JBFYBLGIRKDjp84mDCUKHQGEbMAMoIakhExOJOkLCu7p4+WLYAojDC9sQaTs6RSHA65NYIsbYACkFw8QAeOjIocHDWsABKWGj27ADaggC6EgD8AIStAHriHQBUADoaGuz6RsDs7MAA6lAy1HAZFsDZufm+xTIIpRVVNXV2RKjN9Sj65TriAAZtACQA3lZxMAC+XeJ9g29ot5fAEgj9xmNAR5gZ9EsIvlN9A8NLN5sAMFAkMtVrZ9KY0QAVKDASTWMrAFhsYDWGp0fAATygdAA5PJ8AhiVUcFA2RTmPg4NAdPgoJI+fgdFgaihkogZLjrKSZcAUMdqrVYGAQGisElqRZVLLhRBFdZ6dSkFLgGp9HQ8DAkJLpckOeLgNdbhUzJQahtXNs8gUYPtDncThqYAAxMnKi7od03O6PVpvD62H49foDKExEGBA7gsaQ15AoNwhEPAA0JEMKLmC2xa1AfssexK9ku2DwphAWiqOSoKHE7AGWlEY3m1eZzI09YTA4g+BQbJk9JYuOAdAd1nIbp9SGZ7GZwCgEAgsiqMEXwFIKHIsH0G9dLAlbGYwAAtAA+YDMiD3uAZXYf8oEA4QPywchSFsKBj2-X8QLAiCoJg5ke2APtPEoRdxGZXQDGZKcZzna4F3wUlyCXJIN3ERVrWlBANHQrQAwQcRWKDEMjkqdUzhRZsQAieAoEorR730cQ02DEoUSAA)
+
+```ts
+const newName = 'blackbuckethat/blackbuckethat_d+(fur_v+noears).png';
+const chain = '_';
+const deepChainStart = '(';
+const deepChainEnd = ')';
+
+const splitChainPartsExpressionRaw = /[_]+(?![^(]*\))/g; // Works
+const splitChainPartsExpression = new RegExp(
+  `/[${chain}]+(?![^${deepChainStart}]*\\${deepChainEnd})/g`
+); // Not Working
+// To fix that issue you've to remove the scope of the passed stringified expression
+// and instead specifiy it as argument passed to the RegExp class
+const splitChainPartsExpressionFixed = new RegExp(
+  `[${chain}]+(?![^${deepChainStart}]*\\${deepChainEnd})`,
+  'g'
+); // Works
+
+const chainParts = newName
+  .replace(/^.+\//, '') // Replace everything until the last '/' occurrence belonging to the path -> 'closed/closed-albino' -> 'closed-albino'
+  .replace('.png', '') // Replace file ending (if asset)
+  .split(splitChainPartsExpression);
+
+console.log(chainParts);
+```

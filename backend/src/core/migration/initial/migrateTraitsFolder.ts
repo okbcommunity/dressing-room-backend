@@ -22,7 +22,7 @@ export async function migrateTraitsFolder() {
   const toResolveTraitRelations: {
     id: string;
     slug: string;
-    dependencies: string[];
+    dependencies: (string | TDeepDependency)[];
     variantOf: string | null;
     variant: string | null;
   }[] = [];
@@ -32,7 +32,7 @@ export async function migrateTraitsFolder() {
       name: categoryName,
       slug: categorySlug,
       options: categoryOptions,
-    } = formatName(categoryDirKey);
+    } = formatFileName(categoryDirKey);
     const layerIndex = categoryOptions.layer;
     if (layerIndex == null) {
       console.error('Each category requires a Layer Index!!', {
@@ -42,9 +42,9 @@ export async function migrateTraitsFolder() {
     }
 
     // TODO REMOVE
-    if (!['fur', 'eyes'].includes(categorySlug)) {
-      continue;
-    }
+    // if (!['fur', 'eyes'].includes(categorySlug)) {
+    //   continue;
+    // }
 
     // Query or create Layer in DB
     const layerId = await getOrCreateLayer(layerIndex);
@@ -78,7 +78,7 @@ export async function migrateTraitsFolder() {
         name: traitName,
         slug: traitSlug,
         options: traitOptions,
-      } = formatName(traitAssetKey);
+      } = formatFileName(traitAssetKey);
       const traitId = generateUUID();
 
       // Query Category
@@ -146,7 +146,27 @@ export async function migrateTraitsFolder() {
     // Query Trait dependencies
     const dependencyTraitIds: string[] = [];
     for (const dependency of relation.dependencies) {
-      const trait = await findTraitBySlug(dependency);
+      let dependencySlug = '';
+      if (typeof dependency === 'string') {
+        dependencySlug = dependency;
+      } else {
+        // const example = {
+        //   variant: null,
+        //   variantOf: null,
+        //   dependencies: [
+        //     {
+        //       name: 'Fur Noears',
+        //       slug: 'fur-noears',
+        //       variant: 'noears',
+        //       variantOf: 'fur',
+        //     },
+        //   ],
+        //   layer: null,
+        //   category: null,
+        // };
+        // TODO find deep dependency with variant option
+      }
+      const trait = await findTraitBySlug(dependencySlug);
       const traitId = trait?.id;
       if (traitId != null) {
         dependencyTraitIds.push(traitId);
@@ -182,10 +202,7 @@ export async function migrateTraitsFolder() {
             ? {
                 create: {
                   variant_of_trait_id: variantParentTraitId,
-                  name: `${relation.variant?.replace(
-                    config.separator.space,
-                    ' '
-                  )}`, // TODO format Name
+                  name: formatName(`${relation.variant} ${relation.variantOf}`),
                   slug: `${relation.variant}${config.separator.chain}${relation.slug}`, // e.g. 'noears_lofi-noears'
                 },
               }
@@ -205,15 +222,27 @@ export async function migrateTraitsFolder() {
 // Helper
 // ============================================================================
 
-function formatName(name: string): {
+function formatFileName(name: string): {
   name: string;
   slug: string;
   options: TChainedNameOptions;
 } {
+  // Split at every '+' but avoid splitting in brackets '()' -> /[+]+(?![^(]*\))/g
+  // Based on: https://stackoverflow.com/questions/9219072/how-to-let-regex-ignore-everything-between-brackets
+  const splitInnerChainPartsExpression = new RegExp(
+    `[${config.separator.chainType}]+(?![^${config.separator.deepChainStart}]*\\${config.separator.deepChainEnd})`,
+    'g'
+  );
+  const splitChainPartsExpression = new RegExp(
+    `[${config.separator.chain}]+(?![^${config.separator.deepChainStart}]*\\${config.separator.deepChainEnd})`,
+    'g'
+  );
+
+  // Split Name into Chain Parts
   const chainParts = name
     .replace(/^.+\//, '') // Replace everything until the last '/' occurrence belonging to the path -> 'closed/closed-albino' -> 'closed-albino'
     .replace('.png', '') // Replace file ending (if asset)
-    .split(config.separator.chain); // e.g. 'closed-albino', 'open-lofi'
+    .split(new RegExp(splitChainPartsExpression));
   let newName = chainParts.shift() ?? name;
   const options: TChainedNameOptions = {
     variant: null,
@@ -225,22 +254,36 @@ function formatName(name: string): {
 
   try {
     for (const chainPart of chainParts) {
-      const chainInnerParts = chainPart.split('+');
+      const chainInnerParts = chainPart.split(splitInnerChainPartsExpression);
       if (chainInnerParts.length === 2) {
         const chainIdentifier = chainInnerParts[0];
-        const chainValue = chainInnerParts[1].toLowerCase().replace(' ', '_');
+        const chainValue = nameToSlug(chainInnerParts[1]);
 
         // Handle Variant
         if (chainIdentifier === 'v' && options.variant == null) {
           options.variant = chainValue;
-          options.variantOf = newName
-            .toLowerCase()
-            .replace(' ', config.separator.space);
+          options.variantOf = nameToSlug(newName);
         }
 
         // Handle Dependency
         if (chainIdentifier === 'd') {
-          options.dependencies.push(chainValue);
+          // Handle Deep Chain
+          if (
+            chainValue.startsWith(config.separator.deepChainStart) &&
+            chainValue.endsWith(config.separator.deepChainEnd)
+          ) {
+            const formattedChainValue = formatFileName(chainValue.slice(1, -1));
+            options.dependencies.push({
+              name: formattedChainValue.name,
+              slug: formattedChainValue.slug,
+              variant: formattedChainValue.options.variant,
+              variantOf: formattedChainValue.options.variantOf,
+            });
+          }
+          // Handle Shallow Chain
+          else {
+            options.dependencies.push(chainValue);
+          }
         }
 
         // Handle Layer
@@ -263,27 +306,13 @@ function formatName(name: string): {
         ? `${config.separator.space}${options.variant}`
         : ''
     }${
-      options.dependencies[0] != null
+      typeof options.dependencies[0] === 'string'
         ? `${config.separator.space}${options.dependencies[0]}`
         : ''
     }`; // Add Dependency Name back to Display Name
 
-    // Remove or replace not required Chars
-    newName = newName
-      .toLowerCase()
-      .replace(config.separator.space, ' ')
-      .replace(/[^a-zA-Z ]/g, '') // Replace any special Char
-      .trim();
-
-    // Make each Word uppercase (e.g. fur tan -> Fur Tan)
-    const words = newName
-      .split(' ')
-      .map((word) =>
-        word != null
-          ? `${word.charAt(0).toUpperCase()}${word.substring(1).toLowerCase()}`
-          : word
-      );
-    newName = words.join(' ');
+    // Format Name
+    newName = formatName(newName);
   } catch (err) {
     console.error(`Failed to parse Trait Name '${name}'!`);
   }
@@ -291,8 +320,33 @@ function formatName(name: string): {
   return {
     options,
     name: newName,
-    slug: newName.toLowerCase().replace(' ', config.separator.space),
+    slug: nameToSlug(newName),
   };
+}
+
+function formatName(name: string): string {
+  // Remove or replace not required Chars
+  let newName = name
+    .toLowerCase()
+    .replace(config.separator.space, ' ')
+    .replace(/[^a-zA-Z ]/g, '') // Replace any special Char
+    .trim();
+
+  // Make each Word uppercase (e.g. fur tan -> Fur Tan)
+  const words = newName
+    .split(' ')
+    .map((word) =>
+      word != null
+        ? `${word.charAt(0).toUpperCase()}${word.substring(1).toLowerCase()}`
+        : word
+    );
+  newName = words.join(' ');
+
+  return newName;
+}
+
+function nameToSlug(name: string): string {
+  return name.toLowerCase().replace(' ', config.separator.space);
 }
 
 async function generateTraitAssetVariants(
@@ -374,7 +428,7 @@ async function getOrCreateLayer(index: number): Promise<string> {
 async function getCategory(slugOrName: string): Promise<string | null> {
   const response = await db.category.findFirst({
     where: {
-      slug: slugOrName.toLowerCase().replace(' ', config.separator.space),
+      slug: nameToSlug(slugOrName),
     },
     select: { id: true },
   });
@@ -385,7 +439,7 @@ async function findTraitBySlug(slugOrName: string): Promise<Trait | null> {
   return await db.trait.findFirst({
     where: {
       slug: {
-        equals: slugOrName.toLowerCase().replace(' ', config.separator.space),
+        equals: nameToSlug(slugOrName),
         mode: 'insensitive',
       },
     },
@@ -411,7 +465,14 @@ type TTraitAssetVariantPaths = {
 type TChainedNameOptions = {
   variant: string | null;
   variantOf: string | null;
-  dependencies: string[];
+  dependencies: (TDeepDependency | string)[];
   layer: number | null;
   category: string | null;
+};
+
+type TDeepDependency = {
+  name: string;
+  slug: string;
+  variant: string | null;
+  variantOf: string | null;
 };
