@@ -7,6 +7,7 @@
     "build": "shx rm -rf dist && tsc",
     "start": "node ./dist/index.js",
     "start:dev": "nodemon",
+    "start:dev:debug": "nodemon --inspect=5858 -e ts,tsx --exec node -r ts-node/register ./src/index.ts",
     "prettier": "prettier --config .prettierrc --write \"**/*.{js,ts}\"",
     "lint": "eslint --cache \"**/*.{js,ts}\"",
     "test": "echo \"Error: no test specified\" && exit 1",

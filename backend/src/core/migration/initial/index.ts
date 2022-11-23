@@ -16,7 +16,7 @@ export async function initialMigration() {
     await migrateTraitsFolder();
   }
   if (config.steps.migrateBears) {
-    await migrateBearsCSV(300);
+    await migrateBearsCSV(config.bearsToMigrate);
   }
 
   // Test layering a Bear

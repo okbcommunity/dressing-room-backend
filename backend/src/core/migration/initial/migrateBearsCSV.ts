@@ -33,11 +33,19 @@ export async function migrateBearsCSV(until: number) {
     for (const categoryKey of Object.keys(row)) {
       const traitKey = row[categoryKey];
       if (traitKey != null) {
-        traits[categoryKey] = await queryTraitInformation(
-          traitKey,
-          categoryKey,
-          traits['Fur']?.traitId
-        );
+        const traits = await db.trait.findMany({
+          where: {
+            id: traitKey,
+          },
+        });
+
+        console.log('Traits: ', traits);
+
+        // traits[categoryKey] = await queryTraitInformation(
+        //   traitKey,
+        //   categoryKey,
+        //   traits['Fur']?.traitId
+        // );
       }
     }
 

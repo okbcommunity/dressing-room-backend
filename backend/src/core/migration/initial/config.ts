@@ -37,10 +37,11 @@ export const config = {
   },
 
   testRun: true,
+  bearsToMigrate: 10,
 
   steps: {
-    migrateBears: false,
-    migrateTraits: true,
+    migrateBears: true,
+    migrateTraits: false,
     generateBears: false,
     renameDeep: false,
   },

@@ -1,0 +1,20 @@
+// Use IntelliSense to learn about possible attributes.
+// Hover to view descriptions of existing attributes.
+// For more information, visit: https://go.microsoft.com/fwlink/?linkid=830387
+
+// Based on:
+// https://stackoverflow.com/questions/48470862/debug-and-restart-on-changes-typescript-vscode
+// https://stackoverflow.com/questions/49042830/why-does-the-node-inspector-not-start-when-i-am-using-nodemon-and-ts-node
+{
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "name": "Node: Nodemon",
+      "type": "node",
+      "request": "attach",
+      "restart": true,
+      "port": 5858,
+      "protocol": "inspector"
+    }
+  ]
+}
