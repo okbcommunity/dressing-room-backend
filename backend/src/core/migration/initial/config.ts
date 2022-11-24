@@ -31,18 +31,19 @@ export const config = {
   },
 
   path: {
-    generatedBears: path.join(appConfig.rootPath, 'local/generated'),
+    composedBears: path.join(appConfig.rootPath, 'local/composed'),
     traitsFolder: path.join(appConfig.rootPath, 'local/traits'),
     parsedTraitsFolder: path.join(appConfig.rootPath, 'local/parsedTraits'),
   },
 
   testRun: true,
-  bearsToMigrate: 10,
+  bearsToMigrateCount: 3,
+  bearsToComposeCount: 3,
 
   steps: {
-    migrateBears: true,
-    migrateTraits: false,
-    generateBears: false,
     renameDeep: false,
+    migrateTraits: false,
+    migrateBears: true,
+    composeBears: true,
   },
 };
