@@ -28,38 +28,44 @@ export async function migrateBearsCSV(bearsToMigrateCount: number) {
     delete row['Name'];
 
     // Retrieve corresponding Traits form the Database
-    const traits: Record<string, TQueryTraitInformationResponse | null> = {};
+    const traitsWithVariants: Record<
+      string,
+      TQueryTraitInformationResponse[] | null
+    > = {};
     for (const categoryKey of Object.keys(row)) {
       const traitSlug = row[categoryKey]?.toLocaleLowerCase();
       if (traitSlug != null) {
-        traits[categoryKey] = await queryTraitInformation(
+        traitsWithVariants[categoryKey] = await queryTraitInformation(
           traitSlug,
           categoryKey,
-          traits
+          traitsWithVariants
         );
       }
     }
 
+    // TODO select correct Variant based on the other queried Traits
+    // e.g. If Hat requires Fur without Ears than use that Variant
+
     // Create new Bear Entry in the Database
-    await db.bear.create({
-      data: {
-        id: bearId,
-        index: bearIndex,
-      },
-    });
+    // await db.bear.create({
+    //   data: {
+    //     id: bearId,
+    //     index: bearIndex,
+    //   },
+    // });
 
     // Connect Bear Entry with corresponding Traits
-    for (const traitKey of Object.keys(traits)) {
-      const trait = traits[traitKey];
-      if (trait != null) {
-        await db.bear_Trait.create({
-          data: {
-            bear_id: bearId,
-            trait_id: trait.traitId,
-          },
-        });
-      }
-    }
+    // for (const traitKey of Object.keys(traits)) {
+    //   const trait = traits[traitKey];
+    //   if (trait != null) {
+    //     await db.bear_Trait.create({
+    //       data: {
+    //         bear_id: bearId,
+    //         trait_id: trait.traitId,
+    //       },
+    //     });
+    //   }
+    // }
 
     console.log(`Processed: '${bearIndex}'`);
   }
@@ -72,8 +78,8 @@ export async function migrateBearsCSV(bearsToMigrateCount: number) {
 async function queryTraitInformation(
   traitSlug: string,
   categorySlug: string,
-  traits: Record<string, TQueryTraitInformationResponse | null>
-): Promise<TQueryTraitInformationResponse | null> {
+  traitsWithVariants: Record<string, TQueryTraitInformationResponse[] | null>
+): Promise<TQueryTraitInformationResponse[] | null> {
   // In the .csv Trait Names are specified as e.g. 'Army Hat' but in the DB as 'Armyhat'
   traitSlug = traitSlug.toLowerCase().replace(/ /g, '');
   categorySlug = categorySlug.toLowerCase().replace(/ /g, '');
@@ -81,12 +87,15 @@ async function queryTraitInformation(
   // For debugging
   // setLogging(true);
 
-  const dependingOnTraitIds = Object.keys(traits).reduce(
+  // Extract Ids of the already queried Traits( and its Variants)
+  // that the to query Trait might depend on
+  const dependingOnTraitIds = Object.keys(traitsWithVariants).reduce(
     (traitIds: string[], next: string) => {
-      const trait = traits[next];
-      if (trait != null) {
-        console.log('TraitKey', next); // TODO
-        traitIds.push(trait.traitId);
+      const traitWithVariants = traitsWithVariants[next];
+      if (traitWithVariants != null) {
+        for (const trait of traitWithVariants) {
+          traitIds.push(trait.traitId);
+        }
       }
       return traitIds;
     },
@@ -96,20 +105,27 @@ async function queryTraitInformation(
     ['unknown']
   );
 
-  if (categorySlug === 'hat') {
-    console.log('hatStuff');
-  }
-
-  // Build Query
+  // Query Trait (with its Variants) that contains the 'traitSlug'
+  // and belongs to the Category at the 'categorySlug'.
+  // The queried Trait (with its Variants) has to depend on no Trait
+  // or on a Trait that was previously queried (or a variant of it).
+  // Since a Trait can depend on a Trait that wasn't yet queried,
+  // not found Traits will be queried again,
+  // when all other Traits behind this Trait in the row were queried (on which this Trait might depend on)
+  //
+  // e.g. The Eye 'robot-albino' depends on the Fur 'albino'
+  //
   // https://github.com/prisma/prisma/discussions/3159
   // Note: '{value}' is for Values (but only hard coded!!)
   //   and "{name}" is for Table or Column Names
+  //
   // Good To Know (https://www.prisma.io/docs/concepts/components/prisma-client/raw-database-access#tagged-template-helpers)
   const response = await db.$queryRaw<TQueryTraitInformationResponse[]>`
       SELECT t.id AS "traitId", t.name AS "traitName", t.slug AS "traitSlug",
       c.id AS "categoryId", c.name AS "categoryName", c.slug AS "categorySlug",
       l.id AS "layerId", l.index AS "layerIndex",
-      td.depending_on_trait_id
+      tv.variant_of_trait_id AS "variantOfTraitId",
+      td.depending_on_trait_id AS "dependingOnTraitId"
       FROM "public"."Trait" AS t
       LEFT JOIN "public"."Category" AS c
       ON t.category_id = c.id
@@ -125,20 +141,20 @@ async function queryTraitInformation(
         td.depending_on_trait_id IS NULL
         OR td.depending_on_trait_id IN (${Prisma.join(dependingOnTraitIds)})
       )
-      AND tv.trait_id IS NULL
       `;
 
-  // TODO Look into Variants
-  // if depending_on_trait_id not in xyz
-
-  return response.length >= 1 ? response[0] : null;
+  return response.length > 0 ? response : null;
 }
 
 type TQueryTraitInformationResponse = {
   traitId: string;
   traitName: string;
+  traitSlug: string;
   categoryId: string;
   categoryName: string;
+  categorySlug: string;
   layerId: string;
   layerIndex: string;
+  variantOfTraitId: string;
+  dependingOnTraitId: string;
 };
