@@ -27,10 +27,10 @@ export async function migrateBearsCSV(bearsToMigrateCount: number) {
     const bearIndex = row['Name'] != null ? +row['Name'] : -1;
     delete row['Name'];
 
-    // Retrieve corresponding Traits form the Database
+    // Retrieve corresponding Traits and its Variants form the Database
     const traitsWithVariants: Record<
       string,
-      TQueryTraitInformationResponse[] | null
+      TQueryTraitInformationWithVariants | null
     > = {};
     for (const categoryKey of Object.keys(row)) {
       const traitSlug = row[categoryKey]?.toLocaleLowerCase();
@@ -43,29 +43,61 @@ export async function migrateBearsCSV(bearsToMigrateCount: number) {
       }
     }
 
-    // TODO select correct Variant based on the other queried Traits
-    // e.g. If Hat requires Fur without Ears than use that Variant
+    // Select corresponding Variant based on the other queried Traits.
+    // This separate step has to be done as not all Depending on Combinations
+    // can be resolved during the Query.
+    // Especially these that depend on a Variant of a Trait.
+    const traits: TQueryTraitInformation[] = [];
+    const categoryKeys = Object.keys(traitsWithVariants);
+
+    for (const i of categoryKeys) {
+      const traitWithVariants = traitsWithVariants[i];
+      if (traitWithVariants == null) continue;
+
+      // Decide what Variant of the Trait to use
+      // based on the Traits the other Traits depend on.
+      // Note: That Collisions -> Traits depend on multiple Variants of a Trait
+      // are not handled as then this Bear couldn't be composed!
+      if (traitWithVariants.variants.length > 0) {
+        let relevantTrait: TQueryTraitInformation = traitWithVariants;
+        for (const j of categoryKeys) {
+          const deepTraitWithVariants = traitsWithVariants[j];
+          if (deepTraitWithVariants == null) continue;
+          if (deepTraitWithVariants.dependingOnTraitId != null) {
+            const index = traitWithVariants.variants.findIndex(
+              (variant) =>
+                variant.traitId === deepTraitWithVariants.dependingOnTraitId
+            );
+            if (index !== -1) {
+              relevantTrait = traitWithVariants.variants[index];
+            }
+          }
+        }
+        traits.push(relevantTrait);
+      }
+      // If no Variant the Trait is certain
+      else {
+        traits.push(traitWithVariants);
+      }
+    }
 
     // Create new Bear Entry in the Database
-    // await db.bear.create({
-    //   data: {
-    //     id: bearId,
-    //     index: bearIndex,
-    //   },
-    // });
+    await db.bear.create({
+      data: {
+        id: bearId,
+        index: bearIndex,
+      },
+    });
 
     // Connect Bear Entry with corresponding Traits
-    // for (const traitKey of Object.keys(traits)) {
-    //   const trait = traits[traitKey];
-    //   if (trait != null) {
-    //     await db.bear_Trait.create({
-    //       data: {
-    //         bear_id: bearId,
-    //         trait_id: trait.traitId,
-    //       },
-    //     });
-    //   }
-    // }
+    for (const trait of traits) {
+      await db.bear_Trait.create({
+        data: {
+          bear_id: bearId,
+          trait_id: trait.traitId,
+        },
+      });
+    }
 
     console.log(`Processed: '${bearIndex}'`);
   }
@@ -78,8 +110,8 @@ export async function migrateBearsCSV(bearsToMigrateCount: number) {
 async function queryTraitInformation(
   traitSlug: string,
   categorySlug: string,
-  traitsWithVariants: Record<string, TQueryTraitInformationResponse[] | null>
-): Promise<TQueryTraitInformationResponse[] | null> {
+  traitsWithVariants: Record<string, TQueryTraitInformationWithVariants | null>
+): Promise<TQueryTraitInformationWithVariants | null> {
   // In the .csv Trait Names are specified as e.g. 'Army Hat' but in the DB as 'Armyhat'
   traitSlug = traitSlug.toLowerCase().replace(/ /g, '');
   categorySlug = categorySlug.toLowerCase().replace(/ /g, '');
@@ -93,8 +125,9 @@ async function queryTraitInformation(
     (traitIds: string[], next: string) => {
       const traitWithVariants = traitsWithVariants[next];
       if (traitWithVariants != null) {
-        for (const trait of traitWithVariants) {
-          traitIds.push(trait.traitId);
+        traitIds.push(traitWithVariants.traitId);
+        for (const variant of traitWithVariants.variants) {
+          traitIds.push(variant.traitId);
         }
       }
       return traitIds;
@@ -120,7 +153,7 @@ async function queryTraitInformation(
   //   and "{name}" is for Table or Column Names
   //
   // Good To Know (https://www.prisma.io/docs/concepts/components/prisma-client/raw-database-access#tagged-template-helpers)
-  const response = await db.$queryRaw<TQueryTraitInformationResponse[]>`
+  const response = await db.$queryRaw<TQueryTraitInformation[]>`
       SELECT t.id AS "traitId", t.name AS "traitName", t.slug AS "traitSlug",
       c.id AS "categoryId", c.name AS "categoryName", c.slug AS "categorySlug",
       l.id AS "layerId", l.index AS "layerIndex",
@@ -143,10 +176,27 @@ async function queryTraitInformation(
       )
       `;
 
-  return response.length > 0 ? response : null;
+  // Add Variants to '.variants' and find parent Trait
+  let traitWithVariants: TQueryTraitInformationWithVariants | null = null;
+  const variants: TQueryTraitInformation[] = [];
+  for (const trait of response) {
+    if (trait.variantOfTraitId == null) {
+      traitWithVariants = {
+        ...trait,
+        variants: [],
+      };
+    } else {
+      variants.push(trait);
+    }
+  }
+  if (traitWithVariants != null) {
+    traitWithVariants.variants = variants;
+  }
+
+  return traitWithVariants;
 }
 
-type TQueryTraitInformationResponse = {
+type TQueryTraitInformation = {
   traitId: string;
   traitName: string;
   traitSlug: string;
@@ -158,3 +208,7 @@ type TQueryTraitInformationResponse = {
   variantOfTraitId: string;
   dependingOnTraitId: string;
 };
+
+type TQueryTraitInformationWithVariants = {
+  variants: TQueryTraitInformation[];
+} & TQueryTraitInformation;

@@ -37,8 +37,8 @@ export const config = {
   },
 
   testRun: true,
-  bearsToMigrateCount: 3,
-  bearsToComposeCount: 3,
+  bearsToMigrateCount: 10,
+  bearsToComposeCount: 10,
 
   steps: {
     renameDeep: false,
