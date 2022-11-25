@@ -23,12 +23,14 @@ export async function migrateTraitsFolder() {
     id: string;
     slug: string;
     dependencies: (string | TDeepDependency)[];
+    categoryId: string; // Otherwise it might come to Trait confusing (e.g. green background and green fur)
   }[] = [];
   const toResolveTraitVariants: {
     id: string;
     slug: string;
     variantOf: string | null;
     variant: string | null;
+    categoryId: string; // Otherwise it might come to Trait confusing (e.g. green background and green fur)
   }[] = [];
 
   for (const categoryDirKey of categoryDirKeys) {
@@ -97,24 +99,6 @@ export async function migrateTraitsFolder() {
         specifiedLayerId = await getOrCreateLayer(traitOptions.layer);
       }
 
-      // Add possible relations to 'toResolveTraitRelations' to resolve them
-      // as soon as all Traits were migrated (-> Trait doesn't depend on Trait that wasn't migrated yet)
-      if (traitOptions.dependencies.length > 0) {
-        toResolveTraitDependency.push({
-          id: traitId,
-          slug: traitSlug,
-          dependencies: traitOptions.dependencies,
-        });
-      }
-      if (traitOptions.variant != null) {
-        toResolveTraitVariants.push({
-          id: traitId,
-          slug: traitSlug,
-          variantOf: traitOptions.variantOf,
-          variant: traitOptions.variant,
-        });
-      }
-
       // Create different Image Variants of the Trait Asset
       const traitAssetVariants = await generateTraitAssetVariants(
         traitAsset,
@@ -131,7 +115,7 @@ export async function migrateTraitsFolder() {
       // TODO Upload Trait to Github
 
       // Create Trait in DB
-      await db.trait.create({
+      const trait = await db.trait.create({
         data: {
           id: traitId,
           name: traitName,
@@ -144,6 +128,26 @@ export async function migrateTraitsFolder() {
         },
       });
 
+      // Add possible relations to 'toResolveTraitRelations' to resolve them
+      // as soon as all Traits were migrated (-> Trait doesn't depend on Trait that wasn't migrated yet)
+      if (traitOptions.dependencies.length > 0) {
+        toResolveTraitDependency.push({
+          id: trait.id,
+          slug: trait.slug,
+          dependencies: traitOptions.dependencies,
+          categoryId: trait.category_id,
+        });
+      }
+      if (traitOptions.variant != null) {
+        toResolveTraitVariants.push({
+          id: trait.id,
+          slug: trait.slug,
+          variantOf: traitOptions.variantOf,
+          variant: traitOptions.variant,
+          categoryId: trait.category_id,
+        });
+      }
+
       console.log(`Processed: '${traitName}'`);
     }
   }
@@ -153,13 +157,14 @@ export async function migrateTraitsFolder() {
     // Query Variant Parent
     let variantParentTraitId: string | null = null;
     if (relation.variantOf != null) {
-      const trait = await findTraitBySlug(relation.variantOf);
-      const traitId = trait?.id;
-      if (traitId != null) {
-        variantParentTraitId = traitId;
-      }
+      const trait = await findTraitBySlug(
+        relation.variantOf,
+        relation.categoryId
+      );
+      variantParentTraitId = trait?.id ?? null;
     }
 
+    // Create DB Relation
     if (variantParentTraitId != null) {
       await db.trait_Variant.create({
         data: {
@@ -174,16 +179,21 @@ export async function migrateTraitsFolder() {
 
   // Handle Dependency Relations
   for (const relation of toResolveTraitDependency) {
-    // Query Trait dependencies
     const dependencyTraitIds: string[] = [];
     for (const dependency of relation.dependencies) {
+      // Handle Shallow Dependency
       if (typeof dependency === 'string') {
-        const trait = await findTraitBySlug(dependency);
+        const trait = await findTraitBySlug(dependency, relation.categoryId);
         const traitId = trait?.id;
         if (traitId != null) {
           dependencyTraitIds.push(traitId);
         }
-      } else {
+      }
+      // Handle Deep Dependency
+      else {
+        // Find all Variants of a Dependency,
+        // as if a Trait depends on the Parent it depends also in its Variants
+        // e.g. :
         // blackbuckethat_d+(fur_v+noears).png
         // {
         //   name: 'Fur Noears',
@@ -191,9 +201,6 @@ export async function migrateTraitsFolder() {
         //   variant: 'noears',
         //   variantOf: 'fur',
         // },
-
-        // Find all Variants of a Dependency,
-        // as if a Trait depends on the Parent it depends also in its Variants
         if (dependency.variant != null && dependency.variantOf != null) {
           const traitVariants = await db.trait_Variant.findMany({
             where: {
@@ -221,7 +228,7 @@ export async function migrateTraitsFolder() {
       }
     }
 
-    // Update DB Trait Entry
+    // Create DB Relations
     for (const dependencyTraitId of dependencyTraitIds) {
       await db.trait_Dependency.create({
         data: {
@@ -459,13 +466,18 @@ async function getCategory(slugOrName: string): Promise<string | null> {
   return response?.id ?? null;
 }
 
-async function findTraitBySlug(slugOrName: string): Promise<Trait | null> {
-  return await db.trait.findFirst({
+async function findTraitBySlug(
+  slugOrName: string,
+  categoryId?: string
+): Promise<Trait | null> {
+  return db.trait.findFirst({
     where: {
       slug: {
         equals: nameToSlug(slugOrName),
         mode: 'insensitive',
       },
+      // TODO
+      // category_id: categoryId,
     },
   });
 }

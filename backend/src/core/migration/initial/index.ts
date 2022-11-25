@@ -17,15 +17,19 @@ export async function initialMigration() {
     await migrateTraitsFolder();
   }
   if (config.steps.migrateBears) {
-    await migrateBearsCSV(config.bearsToMigrateCount, config.bearsToMigrate);
+    await migrateBearsCSV(
+      config.bearsToMigrateCount,
+      config.bearsToMigrate ?? undefined
+    );
   }
 
   // Test layering a Bear
   if (config.steps.composeBears) {
-    for (const index of config.bearsToCompose) {
-      await composeBear(index);
-    }
-    if (config.bearsToComposeCount != null) {
+    if (config.bearsToCompose != null) {
+      for (const index of config.bearsToCompose as any) {
+        await composeBear(index);
+      }
+    } else if (config.bearsToComposeCount != null) {
       await composeBears(config.bearsToComposeCount);
     }
   }
