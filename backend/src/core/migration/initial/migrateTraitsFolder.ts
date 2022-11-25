@@ -23,14 +23,12 @@ export async function migrateTraitsFolder() {
     id: string;
     slug: string;
     dependencies: (string | TDeepDependency)[];
-    categoryId: string; // Otherwise it might come to Trait confusing (e.g. green background and green fur)
   }[] = [];
   const toResolveTraitVariants: {
     id: string;
     slug: string;
     variantOf: string | null;
     variant: string | null;
-    categoryId: string; // Otherwise it might come to Trait confusing (e.g. green background and green fur)
   }[] = [];
 
   for (const categoryDirKey of categoryDirKeys) {
@@ -46,11 +44,6 @@ export async function migrateTraitsFolder() {
       });
       return;
     }
-
-    // TODO REMOVE
-    // if (!['fur', 'eyes'].includes(categorySlug)) {
-    //   continue;
-    // }
 
     // Query or create Layer in DB
     const layerId = await getOrCreateLayer(layerIndex);
@@ -135,7 +128,6 @@ export async function migrateTraitsFolder() {
           id: trait.id,
           slug: trait.slug,
           dependencies: traitOptions.dependencies,
-          categoryId: trait.category_id,
         });
       }
       if (traitOptions.variant != null) {
@@ -144,7 +136,6 @@ export async function migrateTraitsFolder() {
           slug: trait.slug,
           variantOf: traitOptions.variantOf,
           variant: traitOptions.variant,
-          categoryId: trait.category_id,
         });
       }
 
@@ -152,15 +143,19 @@ export async function migrateTraitsFolder() {
     }
   }
 
+  // TODO Figure out how to avoid establishing wrong dependencies.
+  // e.g. 'Green Fur' and 'Green Background' confusion
+  // 'okay_d+green.png' -> Might think it depends on 'Green Background' and not 'Green Fur'
+  //
+  // 1. Add category name to slug (okay, but it requires even complexer renaming)
+  // 2. Query with CategoryId as Parameter (not possible as we just know 'green' but not which Category)
+
   // Handle Variant Relations
   for (const relation of toResolveTraitVariants) {
     // Query Variant Parent
     let variantParentTraitId: string | null = null;
     if (relation.variantOf != null) {
-      const trait = await findTraitBySlug(
-        relation.variantOf,
-        relation.categoryId
-      );
+      const trait = await findTraitBySlug(relation.variantOf);
       variantParentTraitId = trait?.id ?? null;
     }
 
@@ -183,7 +178,7 @@ export async function migrateTraitsFolder() {
     for (const dependency of relation.dependencies) {
       // Handle Shallow Dependency
       if (typeof dependency === 'string') {
-        const trait = await findTraitBySlug(dependency, relation.categoryId);
+        const trait = await findTraitBySlug(dependency);
         const traitId = trait?.id;
         if (traitId != null) {
           dependencyTraitIds.push(traitId);
@@ -466,18 +461,13 @@ async function getCategory(slugOrName: string): Promise<string | null> {
   return response?.id ?? null;
 }
 
-async function findTraitBySlug(
-  slugOrName: string,
-  categoryId?: string
-): Promise<Trait | null> {
+async function findTraitBySlug(slugOrName: string): Promise<Trait | null> {
   return db.trait.findFirst({
     where: {
       slug: {
         equals: nameToSlug(slugOrName),
         mode: 'insensitive',
       },
-      // TODO
-      // category_id: categoryId,
     },
   });
 }
