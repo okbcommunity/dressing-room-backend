@@ -1,4 +1,4 @@
-import { composeBears } from './composeBears';
+import { composeBear, composeBears } from './composeBears';
 import { config } from './config';
 import { migrateBearsCSV } from './migrateBearsCSV';
 import { migrateTraitsFolder } from './migrateTraitsFolder';
@@ -17,12 +17,16 @@ export async function initialMigration() {
     await migrateTraitsFolder();
   }
   if (config.steps.migrateBears) {
-    await migrateBearsCSV(config.bearsToMigrateCount);
+    await migrateBearsCSV(config.bearsToMigrateCount, config.bearsToMigrate);
   }
 
   // Test layering a Bear
   if (config.steps.composeBears) {
-    // await composeBear(202);
-    await composeBears(config.bearsToComposeCount);
+    for (const index of config.bearsToCompose) {
+      await composeBear(index);
+    }
+    if (config.bearsToComposeCount != null) {
+      await composeBears(config.bearsToComposeCount);
+    }
   }
 }

@@ -9,7 +9,10 @@ import { parseCSVFile, readFile } from '../../file';
 // Migrate Bears (from CSV)
 // ============================================================================
 
-export async function migrateBearsCSV(bearsToMigrateCount: number) {
+export async function migrateBearsCSV(
+  bearsToMigrateCount: number,
+  bearsToMigrate?: number[]
+) {
   // Logging
   const timetaken = 'Time taken migrating Bears';
   console.log('--- Start migrating Bears ---');
@@ -19,92 +22,102 @@ export async function migrateBearsCSV(bearsToMigrateCount: number) {
   const file = await readFile(
     path.join(appConfig.rootPath, 'local/bear_attributes.csv')
   );
-  const parsedData = parseCSVFile(file, ',').slice(0, bearsToMigrateCount);
+  const parsedData = parseCSVFile(file, ',');
 
-  for (const row of parsedData) {
-    const bearId = generateUUID();
-    // Extract Bear Index at Colum 'Name' before processing Traits
-    const bearIndex = row['Name'] != null ? +row['Name'] : -1;
-    delete row['Name'];
-
-    // Retrieve corresponding Traits and its Variants form the Database
-    const traitsWithVariants: Record<
-      string,
-      TQueryTraitInformationWithVariants | null
-    > = {};
-    for (const categoryKey of Object.keys(row)) {
-      const traitSlug = row[categoryKey]?.toLocaleLowerCase();
-      if (traitSlug != null) {
-        traitsWithVariants[categoryKey] = await queryTraitInformation(
-          traitSlug,
-          categoryKey,
-          traitsWithVariants
-        );
-      }
+  if (bearsToMigrate == null) {
+    for (const row of parsedData.slice(0, bearsToMigrateCount)) {
+      await migrateBear(row);
     }
-
-    // Select corresponding Variant based on the other queried Traits.
-    // This separate step has to be done as not all Depending on Combinations
-    // can be resolved during the Query.
-    // Especially these that depend on a Variant of a Trait.
-    const traits: TQueryTraitInformation[] = [];
-    const categoryKeys = Object.keys(traitsWithVariants);
-
-    for (const i of categoryKeys) {
-      const traitWithVariants = traitsWithVariants[i];
-      if (traitWithVariants == null) continue;
-
-      // Decide what Variant of the Trait to use
-      // based on the Traits the other Traits depend on.
-      // Note: That Collisions -> Traits depend on multiple Variants of a Trait
-      // are not handled as then this Bear couldn't be composed!
-      if (traitWithVariants.variants.length > 0) {
-        let relevantTrait: TQueryTraitInformation = traitWithVariants;
-        for (const j of categoryKeys) {
-          const deepTraitWithVariants = traitsWithVariants[j];
-          if (deepTraitWithVariants == null) continue;
-          if (deepTraitWithVariants.dependingOnTraitId != null) {
-            const index = traitWithVariants.variants.findIndex(
-              (variant) =>
-                variant.traitId === deepTraitWithVariants.dependingOnTraitId
-            );
-            if (index !== -1) {
-              relevantTrait = traitWithVariants.variants[index];
-            }
-          }
-        }
-        traits.push(relevantTrait);
-      }
-      // If no Variant the Trait is certain
-      else {
-        traits.push(traitWithVariants);
-      }
+  } else {
+    for (const index of bearsToMigrate) {
+      await migrateBear(parsedData[index - 1]);
     }
-
-    // Create new Bear Entry in the Database
-    await db.bear.create({
-      data: {
-        id: bearId,
-        index: bearIndex,
-      },
-    });
-
-    // Connect Bear Entry with corresponding Traits
-    for (const trait of traits) {
-      await db.bear_Trait.create({
-        data: {
-          bear_id: bearId,
-          trait_id: trait.traitId,
-        },
-      });
-    }
-
-    console.log(`Processed: '${bearIndex}'`);
   }
 
   // Logging
   console.timeEnd(timetaken);
   console.log('--- End migrating Bears ---');
+}
+
+async function migrateBear(row: Record<string, string | null>) {
+  const bearId = generateUUID();
+  // Extract Bear Index at Colum 'Name' before processing Traits
+  const bearIndex = row['Name'] != null ? +row['Name'] : -1;
+  delete row['Name'];
+
+  // Retrieve corresponding Traits and its Variants form the Database
+  const traitsWithVariants: Record<
+    string,
+    TQueryTraitInformationWithVariants | null
+  > = {};
+  for (const categoryKey of Object.keys(row)) {
+    const traitSlug = row[categoryKey]?.toLocaleLowerCase();
+    if (traitSlug != null) {
+      traitsWithVariants[categoryKey] = await queryTraitInformation(
+        traitSlug,
+        categoryKey,
+        traitsWithVariants
+      );
+    }
+  }
+
+  // Select corresponding Variant based on the other queried Traits.
+  // This separate step has to be done as not all Depending on Combinations
+  // can be resolved during the Query.
+  // Especially these that depend on a Variant of a Trait.
+  const traits: TQueryTraitInformation[] = [];
+  const categoryKeys = Object.keys(traitsWithVariants);
+
+  for (const i of categoryKeys) {
+    const traitWithVariants = traitsWithVariants[i];
+    if (traitWithVariants == null) continue;
+
+    // Decide what Variant of the Trait to use
+    // based on the Traits the other Traits depend on.
+    // Note: That Collisions -> Traits depend on multiple Variants of a Trait
+    // are not handled as then this Bear couldn't be composed!
+    if (traitWithVariants.variants.length > 0) {
+      let relevantTrait: TQueryTraitInformation = traitWithVariants;
+      for (const j of categoryKeys) {
+        const deepTraitWithVariants = traitsWithVariants[j];
+        if (deepTraitWithVariants == null) continue;
+        if (deepTraitWithVariants.dependingOnTraitId != null) {
+          const index = traitWithVariants.variants.findIndex(
+            (variant) =>
+              variant.traitId === deepTraitWithVariants.dependingOnTraitId
+          );
+          if (index !== -1) {
+            relevantTrait = traitWithVariants.variants[index];
+          }
+        }
+      }
+      traits.push(relevantTrait);
+    }
+    // If no Variant the Trait is certain
+    else {
+      traits.push(traitWithVariants);
+    }
+  }
+
+  // Create new Bear Entry in the Database
+  await db.bear.create({
+    data: {
+      id: bearId,
+      index: bearIndex,
+    },
+  });
+
+  // Connect Bear Entry with corresponding Traits
+  for (const trait of traits) {
+    await db.bear_Trait.create({
+      data: {
+        bear_id: bearId,
+        trait_id: trait.traitId,
+      },
+    });
+  }
+
+  console.log(`Processed: '${bearIndex}'`);
 }
 
 async function queryTraitInformation(
