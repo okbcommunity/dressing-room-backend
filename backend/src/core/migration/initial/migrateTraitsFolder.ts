@@ -1,4 +1,5 @@
 import { Trait } from '@prisma/client';
+import e from 'express';
 import sharp from 'sharp';
 import { generateUUID } from '../../../utlis';
 import { db } from '../../db';
@@ -27,8 +28,10 @@ export async function migrateTraitsFolder() {
   const toResolveTraitVariants: {
     id: string;
     slug: string;
-    variantOf: string | null;
-    variant: string | null;
+    variant: {
+      slug: string;
+      variantOfSlug: string;
+    };
   }[] = [];
 
   for (const categoryDirKey of categoryDirKeys) {
@@ -79,11 +82,16 @@ export async function migrateTraitsFolder() {
         options: traitOptions,
       } = formatFileName(traitAssetKey);
       const traitId = generateUUID();
+      let traitCategoryId = categoryId;
 
       // Query Category
-      let specifiedCategoryId: string | null = null;
-      if (traitOptions.category != null) {
-        specifiedCategoryId = await getCategory(traitOptions.category);
+      if (traitOptions.categorySlug != null) {
+        const specifiedCategoryId = await getCategory(
+          traitOptions.categorySlug
+        );
+        if (specifiedCategoryId != null) {
+          traitCategoryId = specifiedCategoryId;
+        }
       }
 
       // Query or create Layer in DB
@@ -114,7 +122,7 @@ export async function migrateTraitsFolder() {
           name: traitName,
           slug: traitSlug,
           layer_id: specifiedLayerId ?? layerId, // Use Category Layer if no Layer specified
-          category_id: specifiedCategoryId ?? categoryId,
+          category_id: traitCategoryId,
           image_url_webp: traitAssetVariantPaths.webp,
           image_url_png_2000x2000: traitAssetVariantPaths.png2000x2000,
           image_url_png_512x512: traitAssetVariantPaths.png512x512,
@@ -134,7 +142,6 @@ export async function migrateTraitsFolder() {
         toResolveTraitVariants.push({
           id: trait.id,
           slug: trait.slug,
-          variantOf: traitOptions.variantOf,
           variant: traitOptions.variant,
         });
       }
@@ -153,11 +160,8 @@ export async function migrateTraitsFolder() {
   // Handle Variant Relations
   for (const relation of toResolveTraitVariants) {
     // Query Variant Parent
-    let variantParentTraitId: string | null = null;
-    if (relation.variantOf != null) {
-      const trait = await findTraitBySlug(relation.variantOf);
-      variantParentTraitId = trait?.id ?? null;
-    }
+    const trait = await findTraitBySlug(relation.variant.variantOfSlug);
+    const variantParentTraitId = trait?.id ?? null;
 
     // Create DB Relation
     if (variantParentTraitId != null) {
@@ -165,8 +169,10 @@ export async function migrateTraitsFolder() {
         data: {
           trait_id: relation.id,
           variant_of_trait_id: variantParentTraitId,
-          name: formatName(`${relation.variant} ${relation.variantOf}`),
-          slug: relation.variant ?? 'unknown',
+          name: formatName(
+            `${relation.variant} ${relation.variant.variantOfSlug}`
+          ),
+          slug: relation.variant.slug,
         },
       });
     }
@@ -193,20 +199,22 @@ export async function migrateTraitsFolder() {
         // {
         //   name: 'Fur Noears',
         //   slug: 'fur-noears',
-        //   variant: 'noears',
-        //   variantOf: 'fur',
+        //   variantSlug: 'noears',
+        //   variantOfSlug: 'fur',
         // },
-        if (dependency.variant != null && dependency.variantOf != null) {
+
+        // Handle Deep Variant Dependency
+        if (dependency.variant != null) {
           const traitVariants = await db.trait_Variant.findMany({
             where: {
               slug: {
-                equals: dependency.variant,
+                equals: dependency.variant.slug,
                 mode: 'insensitive',
               },
               trait: {
                 category: {
                   slug: {
-                    equals: dependency.variantOf,
+                    equals: dependency.variant.variantOfSlug,
                     mode: 'insensitive',
                   },
                 },
@@ -218,6 +226,19 @@ export async function migrateTraitsFolder() {
           });
           for (const traitVariant of traitVariants) {
             dependencyTraitIds.push(traitVariant.trait_id);
+          }
+        }
+
+        // Handle Deep Dependency with specified Category
+        // e.g.: okay_d+(green_c+fur).png
+        if (dependency.categorySlug != null) {
+          const categoryId = await getCategory(dependency.categorySlug);
+          if (categoryId != null) {
+            const trait = await findTraitBySlug(dependency.slug, categoryId);
+            const traitId = trait?.id;
+            if (traitId != null) {
+              dependencyTraitIds.push(traitId);
+            }
           }
         }
       }
@@ -268,11 +289,7 @@ function formatFileName(name: string): {
     .split(new RegExp(splitChainPartsExpression));
   let newName = chainParts.shift() ?? name;
   const options: TChainedNameOptions = {
-    variant: null,
-    variantOf: null,
     dependencies: [],
-    layer: null,
-    category: null,
   };
 
   try {
@@ -284,8 +301,10 @@ function formatFileName(name: string): {
 
         // Handle Variant
         if (chainIdentifier === 'v' && options.variant == null) {
-          options.variant = chainValue;
-          options.variantOf = nameToSlug(newName);
+          options.variant = {
+            slug: chainValue,
+            variantOfSlug: nameToSlug(newName),
+          };
         }
 
         // Handle Dependency
@@ -300,7 +319,7 @@ function formatFileName(name: string): {
               name: formattedChainValue.name,
               slug: formattedChainValue.slug,
               variant: formattedChainValue.options.variant,
-              variantOf: formattedChainValue.options.variantOf,
+              categorySlug: formattedChainValue.options.categorySlug,
             });
           }
           // Handle Shallow Chain
@@ -315,8 +334,8 @@ function formatFileName(name: string): {
         }
 
         // Handle Category
-        if (chainIdentifier === 'c' && options.category == null) {
-          options.category = chainValue;
+        if (chainIdentifier === 'c' && options.categorySlug == null) {
+          options.categorySlug = chainValue;
         }
       } else {
         console.log('Invalid Chain Part provided!', chainPart);
@@ -326,7 +345,7 @@ function formatFileName(name: string): {
     // Add relevant Chain Parts back to Display Name
     newName = `${newName}${
       options.variant != null
-        ? `${config.separator.space}${options.variant}`
+        ? `${config.separator.space}${options.variant.slug}`
         : ''
     }${
       typeof options.dependencies[0] === 'string'
@@ -461,13 +480,17 @@ async function getCategory(slugOrName: string): Promise<string | null> {
   return response?.id ?? null;
 }
 
-async function findTraitBySlug(slugOrName: string): Promise<Trait | null> {
+async function findTraitBySlug(
+  slugOrName: string,
+  categoryId?: string
+): Promise<Trait | null> {
   return db.trait.findFirst({
     where: {
       slug: {
         equals: nameToSlug(slugOrName),
         mode: 'insensitive',
       },
+      category_id: categoryId,
     },
   });
 }
@@ -489,16 +512,21 @@ type TTraitAssetVariantPaths = {
 };
 
 type TChainedNameOptions = {
-  variant: string | null;
-  variantOf: string | null;
+  variant?: {
+    slug: string;
+    variantOfSlug: string;
+  };
   dependencies: (TDeepDependency | string)[];
-  layer: number | null;
-  category: string | null;
+  layer?: number;
+  categorySlug?: string;
 };
 
 type TDeepDependency = {
   name: string;
   slug: string;
-  variant: string | null;
-  variantOf: string | null;
+  variant?: {
+    slug: string;
+    variantOfSlug: string;
+  };
+  categorySlug?: string;
 };

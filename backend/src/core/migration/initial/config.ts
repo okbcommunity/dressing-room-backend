@@ -38,14 +38,14 @@ export const config = {
 
   testRun: true,
   bearsToMigrateCount: 100,
-  bearsToMigrate: [2, 4, 8, 29, 33],
+  bearsToMigrate: [2, 10, 44, 36, 65, 100],
   bearsToComposeCount: 100,
-  bearsToCompose: [2, 4, 8, 29, 33],
+  bearsToCompose: [2, 10, 44, 36, 65, 100],
 
   steps: {
     renameDeep: false,
     migrateTraits: true,
-    migrateBears: false,
-    composeBears: false,
+    migrateBears: true,
+    composeBears: true,
   },
 };

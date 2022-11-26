@@ -20,7 +20,9 @@ export function renameDeep() {
 
       // return `${dirpath}/${filename.replace('.png', '')}.png`;
 
-      return `${dirpath}/${filename.replace('c+', 'v+')}`;
+      // return `${dirpath}/${filename.replace('c+', 'v+')}`;
+
+      return `${dirpath}/${filename.replace('+green', '+(green_c+fur)')}`;
     }
   );
 }
